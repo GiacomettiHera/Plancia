@@ -38,6 +38,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .k{position:relative;overflow:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;min-height:0;min-width:0;background:var(--key);transition:background .12s,color .12s,opacity .15s,transform .08s;touch-action:none}
 .k.press{background:var(--key-h);transform:scale(.97)}
 .k.on{background:var(--acc);color:var(--acc-ink)}
+.k.warn{background:rgb(229 72 77 / .16);color:var(--bad)}
+.k.warn .s{color:var(--bad)}
 .k.bad{background:var(--bad);color:#fff}
 .k.dim{opacity:.35}
 .k.empty{background:none}
@@ -47,7 +49,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .k.on .s{color:inherit;opacity:.7}
 .k.bad .s{color:inherit;opacity:.85}
 .g{font-weight:700;line-height:1;font-size:clamp(28px,10vmin,46px);letter-spacing:-.02em}
-.g svg{display:block;width:clamp(26px,8vmin,38px);height:clamp(26px,8vmin,38px);fill:currentColor}
+.ic svg{display:block;width:clamp(30px,10vmin,46px);height:clamp(30px,10vmin,46px)}
+.ic.emoji svg{width:clamp(34px,11vmin,52px);height:clamp(34px,11vmin,52px)}
 
 /* slider */
 .k.sl{padding:14px 16px;gap:10px;align-items:stretch}
@@ -100,20 +103,20 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
   <div id="lost">Riconnessione…</div>
 </section>
 
+<script src="icons.js"></script>
 <script>
 // Protocollo: vedi windows/Plancia/BleServer.cs e TrayApp.cs
 const U = n => `7a1e000${n}-5c3b-4c1e-9f1a-2b7d9c3e4f10`;
 const SVC = U(0), CMD = U(1), STATE = U(2), LAYOUT = U(3), INFO = U(4), ART = U(5);
 const CHUNK = 480; // come BleServer.Chunk
 const HOLD_MS = 450;
-// Stesse forme dell'editor (KeyPainter.Media), griglia 24×24.
-const SVG = {
-  play: '<path d="M7 5v14l11-7z"/>',
-  pause: '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>',
-  next: '<path d="M6 5v14l9-7zM16 5h3v14h-3z"/>',
-  prev: '<path d="M18 5v14l-9-7zM5 5h3v14H5z"/>',
-};
-const svg = name => `<svg viewBox="0 0 24 24">${SVG[name]}</svg>`;
+// Icone Fluent (icons.js). fill null = colore del testo, così seguono lo stato del tasto.
+const svgCache = {};
+const svgOf = name => svgCache[name] ??= ICONS[name]
+  ? `<svg viewBox="0 0 ${ICONS[name].s} ${ICONS[name].s}">${ICONS[name].p.map(([f, d]) => `<path d="${d}" fill="${f || 'currentColor'}"/>`).join('')}</svg>`
+  : '';
+// Stesse parole chiave di KeyText.IsHeadphones.
+const isHeadphones = n => /cuffi|auricolar|headphone|headset|earbud|buds|airpods/i.test(n || '');
 const $ = id => document.getElementById(id);
 const dec = new TextDecoder(), enc = new TextEncoder();
 
@@ -352,18 +355,35 @@ function update() {
   $('deskinfo').textContent = dn ? `${dn} · ${st.d}/${st.c}` : `Desktop ${st.d}/${st.c}`;
 }
 
-// Stato mostrato sotto il titolo (e colore del tasto).
-function status(k) {
+// Icona e aspetto del tasto in base allo stato del PC (stessa icona di base di KeyText.Icon).
+// on = attivo (arancio) · warn = muto/spento (icona rossa) · bad = rosso pieno · dim = non disponibile · s = testo al posto dell'etichetta
+function look(k) {
   const f = st.f, meet = inMeeting();
   switch (k.a) {
-    case 'vol.mute': return { on: st.mu, s: st.mu ? 'Attivo' : '' };
-    case 'mic.mute': return { bad: f & 1, s: f & 1 ? 'Muto' : '' };
-    case 'audio.output': return { s: info.o || '' };
-    case 'teams.mute': return [{ dim: 1, s: 'Non attivo' }, { on: 1, s: 'Acceso' }, { bad: 1, s: 'Muto' }, { s: 'Tocca per associare' }][st.tm] || {};
-    case 'teams.video': return { dim: !meet, on: meet && f & 2 };
-    case 'teams.hand': return { dim: !meet, on: meet && f & 4 };
-    case 'teams.blur': return { dim: !meet, on: meet && f & 8 };
-    case 'teams.leave': case 'teams.react': return { dim: !meet };
+    case 'deskNext': return { icon: 'arrow_circle_right' };
+    case 'deskPrev': return { icon: 'arrow_circle_left' };
+    case 'window.toDesk': return { icon: 'desktop_arrow_right' };
+    case 'window.focus': return { icon: 'window_arrow_up' };
+    case 'media.playpause': return { icon: st.m === 1 ? 'pause' : 'play' };
+    case 'media.next': return { icon: 'next' };
+    case 'media.prev': return { icon: 'previous' };
+    case 'vol.up': return { icon: 'speaker' };
+    case 'vol.down': return { icon: 'speaker_low' };
+    case 'vol.mute': return st.mu ? { icon: 'speaker_mute', warn: 1 } : { icon: 'speaker' };
+    case 'audio.output': return { icon: isHeadphones(info.o) ? 'headphones' : 'speaker', s: info.o || k.l };
+    case 'mic.mute': return f & 1 ? { icon: 'mic_off', warn: 1 } : { icon: 'mic' };
+    case 'teams.mute':
+      return [{ icon: 'mic', dim: 1 }, { icon: 'mic' }, { icon: 'mic_off', warn: 1 }, { icon: 'mic', s: 'Tocca per associare' }][st.tm] || { icon: 'mic' };
+    case 'teams.video': return meet && f & 2 ? { icon: 'video', on: 1 } : { icon: 'video_off', dim: !meet };
+    case 'teams.hand': return { icon: 'hand', on: meet && f & 4, dim: !meet };
+    case 'teams.blur': return { icon: 'blur', on: meet && f & 8, dim: !meet };
+    case 'teams.leave': return { icon: 'call_end', bad: meet, dim: !meet };
+    case 'teams.react': return { icon: 'emoji_' + (k.r || 'like'), dim: !meet };
+    case 'launch': return { icon: 'open' };
+    case 'hotkey': return { icon: 'keyboard' };
+    case 'macro': return { icon: 'flash' };
+    case 'page': return { icon: 'folder' };
+    case 'page.back': return { icon: 'arrow_left' };
   }
   return {};
 }
@@ -377,29 +397,23 @@ function makeKey(k, i) {
   if (k.lg) el.classList.add('lg');
   bindPress(el, k, i);
 
-  const glyph = { desk: String(k.n || ''), 'vol.up': '+', 'vol.down': '−', 'media.prev': svg('prev'), 'media.next': svg('next'), 'media.playpause': svg('play') }[k.a];
   const main = document.createElement('div'), sub = document.createElement('div');
-  main.className = glyph != null ? 'g' : 't';
   sub.className = 's';
-  if (glyph != null) main.innerHTML = glyph; else main.textContent = k.l || '';
   el.append(main, sub);
+  const isDesk = k.a === 'desk';
+  if (isDesk) { main.className = 'g'; main.textContent = String(k.n || ''); }
 
-  let playing = null;
+  let shown;
   return {
     el, upd() {
-      let s = glyph != null ? k.l || '' : '';
-      if (k.a === 'desk') {
-        el.classList.toggle('on', st.d === k.n);
-        if (!s) s = (info.ds || [])[k.n - 1] || '';
-      } else if (k.a === 'media.playpause') {
-        if (playing !== (st.m === 1)) { playing = st.m === 1; main.innerHTML = svg(playing ? 'pause' : 'play'); }
-      } else {
-        const x = status(k);
-        el.classList.toggle('on', !!x.on);
-        el.classList.toggle('bad', !!x.bad);
-        el.classList.toggle('dim', !!x.dim);
-        if (x.s) s = x.s;
+      const x = isDesk ? { on: st.d === k.n, s: k.l || (info.ds || [])[k.n - 1] } : look(k);
+      if (!isDesk && x.icon !== shown) {
+        shown = x.icon;
+        if (x.icon && ICONS[x.icon]) { main.className = 'ic' + (x.icon.startsWith('emoji_') ? ' emoji' : ''); main.innerHTML = svgOf(x.icon); }
+        else { main.className = 't'; main.textContent = k.l || ''; }
       }
+      for (const c of ['on', 'warn', 'bad', 'dim']) el.classList.toggle(c, !!x[c]);
+      const s = main.className === 't' ? '' : (x.s ?? k.l) || '';
       if (sub.textContent !== s) sub.textContent = s;
       sub.style.display = s ? '' : 'none';
     }
