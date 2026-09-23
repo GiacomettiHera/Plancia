@@ -88,7 +88,6 @@ if (!navigator.bluetooth) {
 
 $('go').addEventListener('click', async () => {
   err('');
-  try { await document.documentElement.requestFullscreen?.(); await screen.orientation?.lock?.('landscape'); } catch {}
   try {
     const d = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }] });
     await connect(d);
@@ -154,7 +153,13 @@ function render() {
 }
 addEventListener('resize', () => layout && render());
 
+function goFull() {
+  if (document.fullscreenElement || matchMedia('(display-mode: fullscreen)').matches) return;
+  document.documentElement.requestFullscreen?.().then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
+}
+
 function press(i, el) {
+  goFull();
   el.classList.add('press');
   setTimeout(() => el.classList.remove('press'), 120);
   navigator.vibrate?.(12);
