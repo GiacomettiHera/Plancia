@@ -76,7 +76,8 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 
 /* ---- barra ---- */
 #deck{flex-direction:column;gap:10px}
-.bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;height:34px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto) minmax(0,1fr);align-items:center;gap:10px;height:34px}
+.bar>*{min-width:0}
 .bar>:last-child{justify-self:end}
 .ghost{appearance:none;border:0;background:none;color:var(--foreground);font:500 13px Geist,sans-serif;height:32px;padding:0 10px;margin-left:-10px;border-radius:var(--radius);display:inline-flex;align-items:center;gap:8px;justify-self:start;transition:background .15s}
 .ghost:active{background:var(--accent)}
@@ -84,7 +85,8 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 .dot.off{background:var(--destructive);animation:blink 1s infinite}
 @keyframes blink{50%{opacity:.3}}
 #deskinfo{font-size:13px;font-weight:500;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.tabs{position:relative;display:inline-flex;background:var(--muted);border-radius:var(--radius);padding:3px;max-width:52vw;overflow:hidden}
+.tabs{position:relative;display:inline-flex;background:var(--muted);border-radius:var(--radius);padding:3px;max-width:52vw;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
 .tabs:empty{display:none}
 .tab{position:relative;z-index:1;appearance:none;border:0;background:none;font:500 13px Geist,sans-serif;color:var(--muted-foreground);height:28px;padding:0 12px;border-radius:calc(var(--radius) - 3px);white-space:nowrap;transition:color .2s}
 .tab.on{color:var(--foreground)}
@@ -142,21 +144,24 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 .me{margin:auto;font-size:13px;color:var(--muted-foreground);text-align:center}
 
 /* finestre aperte */
-.k.wn{padding:12px 12px 8px;align-items:stretch;justify-content:flex-start;gap:12px;overflow-y:auto;touch-action:pan-y;scrollbar-width:none}
+/* griglia di al massimo 7×3 che scorre in orizzontale, con aggancio ogni 2 colonne */
+.k.wn{--wc:7;--wr:3;--wg:8px;display:grid;grid-auto-flow:column;grid-template-rows:repeat(var(--wr),minmax(0,1fr));
+  grid-auto-columns:calc((100% - (var(--wc) - 1) * var(--wg)) / var(--wc));gap:var(--wg);padding:10px;align-items:stretch;justify-content:start;
+  overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding-inline:10px;overscroll-behavior-x:contain;touch-action:pan-x;scrollbar-width:none}
 .k.wn::-webkit-scrollbar{display:none}
-.wsec{display:flex;flex-direction:column;gap:8px}
-.wsh{font-size:12px;font-weight:500;color:var(--muted-foreground);display:flex;align-items:center;gap:6px;padding:0 2px}
-.wsh.cur{color:var(--foreground)}
-.wsh.cur::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--primary)}
-.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
-.wt{appearance:none;border:1px solid var(--border);background:var(--background);color:var(--foreground);border-radius:var(--radius);padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;font:inherit;transition:transform .15s var(--ease),background .15s;animation:fade .3s var(--ease) backwards}
+.wt.snap{scroll-snap-align:start;scroll-snap-stop:always}
+.wt{position:relative;appearance:none;border:1px solid var(--border);background:var(--background);color:var(--foreground);border-radius:var(--radius);padding:8px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:0;font:inherit;transition:transform .15s var(--ease),background .15s;animation:fade .3s var(--ease) backwards}
+.wd{position:absolute;left:6px;top:6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:10px;font-weight:600;line-height:16px;text-align:center}
+.wd.cur{background:var(--primary);color:var(--primary-foreground)}
+.dark .wd{background:var(--card)}
+.dark .wd.cur{background:var(--primary)}
 .dark .wt{background:var(--muted);border-color:transparent}
 .wt:active{transform:scale(.94);background:var(--accent)}
 .wt img,.wt .av{width:30px;height:30px;border-radius:7px;flex:none}
 .wt .av{display:grid;place-items:center;background:var(--muted);color:var(--muted-foreground);font-weight:600;font-size:14px}
 .dark .wt .av{background:var(--card)}
 .wtt{font-size:11px;line-height:1.25;font-weight:500;text-align:center;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
-.wempty{margin:auto;font-size:13px;color:var(--muted-foreground)}
+.wempty{grid-row:1/-1;grid-column:1/-1;margin:auto;font-size:13px;color:var(--muted-foreground)}
 
 /* in riproduzione */
 .k.now{container-type:size;padding:12px}
@@ -511,7 +516,7 @@ function goPage(p) {
 function goBack() { setPage(stack.length ? stack.pop() : 0, true); }
 
 function renderTabs() {
-  const box = $('tabs');
+  const box = $('tabs'), keep = box.scrollLeft;
   box.innerHTML = '';
   if (layout.pages.length < 2) return;
   const pill = document.createElement('div');
@@ -524,6 +529,7 @@ function renderTabs() {
     b.addEventListener('click', () => { stack = []; autoFrom = null; setPage(i); });
     box.append(b);
   });
+  box.scrollLeft = keep;
   const on = box.querySelector('.tab.on');
   const place = animate => {
     if (!on) return;
@@ -535,7 +541,12 @@ function renderTabs() {
   // Parte dalla scheda precedente e scivola su quella nuova.
   const prev = renderTabs.last;
   if (prev) { pill.style.transition = 'none'; pill.style.left = prev.left + 'px'; pill.style.width = prev.width + 'px'; pill.offsetWidth; pill.style.transition = ''; }
-  requestAnimationFrame(() => { place(!!prev); renderTabs.last = on ? { left: on.offsetLeft, width: on.offsetWidth } : null; });
+  requestAnimationFrame(() => {
+    place(!!prev);
+    renderTabs.last = on ? { left: on.offsetLeft, width: on.offsetWidth } : null;
+    // Schede che non ci stanno: quella attiva resta sempre in vista.
+    if (on) box.scrollLeft = Math.max(0, on.offsetLeft - (box.clientWidth - on.offsetWidth) / 2);
+  });
 }
 
 // ---- Griglia ----
@@ -788,7 +799,9 @@ function makeMixer(k, el) {
   };
 }
 
-// Finestre aperte sul PC, raggruppate per desktop: tocco = vai al desktop della finestra e portala in primo piano.
+// Finestre aperte sul PC in una griglia di al massimo 7×3 che scorre in orizzontale (aggancio ogni 2 colonne).
+// Ordinate per desktop, col numero del desktop sul quadratino. Tocco = vai a quel desktop e porta la finestra in primo piano.
+const WIN_COLS = 7, WIN_ROWS = 3, WIN_MIN_W = 76, WIN_MIN_H = 72, WIN_SNAP = 2;
 function makeWindows(k, el) {
   el.classList.add('wn');
   el.addEventListener('pointerdown', goFull);
@@ -798,53 +811,70 @@ function makeWindows(k, el) {
     for (const sep of [' - ', ' — ', ' | ']) if (app && t.endsWith(sep + app) && t.length > app.length + sep.length) return t.slice(0, -(app.length + sep.length));
     return t;
   };
+  // Colonne e righe visibili: al massimo 7×3, meno se il tasto è piccolo (i quadratini non scendono sotto una misura minima).
+  // In verticale la griglia si ruota come il resto della pagina: al massimo 3 colonne × 7 righe.
+  const fit = () => {
+    const gap = 8, w = el.clientWidth - 20, h = el.clientHeight - 20, tall = h > w;
+    const cols = Math.max(1, Math.min(tall ? WIN_ROWS : WIN_COLS, Math.floor((w + gap) / (WIN_MIN_W + gap))));
+    const rows = Math.max(1, Math.min(tall ? WIN_COLS : WIN_ROWS, Math.floor((h + gap) / (WIN_MIN_H + gap))));
+    el.style.setProperty('--wc', cols);
+    el.style.setProperty('--wr', rows);
+    dims = cols + 'x' + rows;
+    return rows;
+  };
   const build = () => {
     el.innerHTML = '';
-    const list = wins?.w || [];
-    if (!list.length) { el.innerHTML = `<div class="wempty">${wins ? 'Nessuna finestra aperta' : 'Caricamento…'}</div>`; return; }
-    const desks = [...new Set(list.map(w => w.d))].sort((a, b) => (a || 99) - (b || 99));
-    let n = 0;
-    for (const d of desks) {
-      const sec = document.createElement('div'), head = document.createElement('div'), grid = document.createElement('div');
-      sec.className = 'wsec';
-      head.className = 'wsh' + (d === st.d ? ' cur' : '');
-      const name = (info.ds || [])[d - 1];
-      head.textContent = d ? `Desktop ${d}` + (name && name !== `Desktop ${d}` ? ` · ${name}` : '') : 'Tutti i desktop';
-      grid.className = 'wgrid';
-      for (const w of list.filter(x => x.d === d)) {
-        const app = wins.a[w.a] || {}, b = document.createElement('button');
-        b.className = 'wt';
-        if (first) b.style.animationDelay = Math.min(n++ * 18, 400) + 'ms';
-        else b.style.animation = 'none';
-        const ic = iconOf(app.k);
-        b.innerHTML = ic ? `<img alt="">` : `<span class="av"></span>`;
-        if (ic) b.firstChild.src = ic; else b.firstChild.textContent = (app.n || w.t || '?').trim()[0]?.toUpperCase() || '?';
-        const t = document.createElement('span');
-        t.className = 'wtt';
-        t.textContent = short(w.t, app.n) || app.n || '';
-        b.append(t);
-        b.title = w.t;
-        b.addEventListener('click', () => {
-          navigator.vibrate?.(10);
-          b.animate([{ transform: 'scale(.92)' }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
-          send({ w: w.i });
-        });
-        grid.append(b);
-      }
-      sec.append(head, grid);
-      el.append(sec);
+    const rows = fit();
+    const list = (wins?.w || []).slice().sort((a, b) => (a.d || 99) - (b.d || 99)); // sort stabile: dentro il desktop resta lo z-order
+    if (!list.length) {
+      el.innerHTML = `<div class="wempty">${wins ? 'Nessuna finestra aperta' : 'Caricamento…'}</div>`;
+      el.firstChild.style.gridColumn = `1 / span ${WIN_COLS}`;
+      el.firstChild.style.gridRow = `1 / span ${rows}`;
+      return;
     }
+    list.forEach((w, n) => {
+      const app = wins.a[w.a] || {}, b = document.createElement('button');
+      // Punto di aggancio sul primo quadratino di ogni coppia di colonne.
+      b.className = 'wt' + (n % (rows * WIN_SNAP) === 0 ? ' snap' : '');
+      if (first) b.style.animationDelay = Math.min(n * 18, 400) + 'ms';
+      else b.style.animation = 'none';
+      const ic = iconOf(app.k);
+      b.innerHTML = (ic ? `<img alt="">` : `<span class="av"></span>`) + `<span class="wd${w.d === st.d ? ' cur' : ''}"></span><span class="wtt"></span>`;
+      if (ic) b.firstChild.src = ic; else b.firstChild.textContent = (app.n || w.t || '?').trim()[0]?.toUpperCase() || '?';
+      b.children[1].textContent = w.d || '∗';
+      b.children[1].style.display = (info.ds || []).length > 1 || w.d > 1 ? '' : 'none'; // un solo desktop: niente numero
+      b.lastChild.textContent = short(w.t, app.n) || app.n || '';
+      b.title = w.t;
+      b.addEventListener('click', () => {
+        navigator.vibrate?.(10);
+        b.animate([{ transform: 'scale(.92)' }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+        send({ w: w.i });
+      });
+      el.append(b);
+    });
     first = false;
   };
+  // Il tasto può essere misurato prima di avere la sua misura finale (schermata ancora nascosta): se colonne o righe cambiano si ricostruisce.
+  let dims = '';
+  const ro = new ResizeObserver(() => {
+    if (!el.isConnected) return ro.disconnect();
+    if (!st || !dims) return;
+    const before = dims;
+    fit();
+    dims = el.style.getPropertyValue('--wc') + 'x' + el.style.getPropertyValue('--wr');
+    if (dims !== before) { const left = el.scrollLeft; build(); el.scrollLeft = left; }
+  });
+  ro.observe(el);
   return {
     el, upd() {
       const s = [wins?.v, st.d, (info.ds || []).join('|'), iconsVer].join(':');
       if (s === sig) return;
+      dims ||= 'x';
       if (wins && sig && sig.split(':')[0] !== String(wins.v)) first = true; // elenco nuovo: rientra animato
       sig = s;
-      const top = el.scrollTop;
+      const left = el.scrollLeft;
       build();
-      el.scrollTop = top;
+      el.scrollLeft = left;
     }
   };
 }
