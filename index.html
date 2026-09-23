@@ -66,7 +66,9 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 /* ---- schermata iniziale: i tuoi PC (verticale: una colonna · orizzontale: due) ---- */
 #connect{align-items:center;justify-content:center;overflow:hidden}
 .card{background:var(--card);color:var(--card-foreground);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);box-shadow:var(--shadow)}
-.home{width:min(460px,100%);max-height:100%;padding:24px;display:grid;grid-template-rows:auto minmax(0,1fr);gap:18px}
+/* minmax(0,1fr): senza, la colonna si allarga fino al testo più lungo e tutto esce dallo schermo in verticale */
+.home{width:min(460px,100%);max-height:100%;padding:24px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:18px}
+.intro,.pcs,.pc{min-width:0}
 .intro{display:flex;flex-direction:column;gap:8px}
 .home .brand{font-size:13px;font-weight:500;color:var(--muted-foreground)}
 .home h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em}
@@ -83,7 +85,7 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 .pc .on-dot{position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--background)}
 .pc .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .pc .nm{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pc .sb{font-size:12px;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc .sb{font-size:12px;line-height:1.35;color:var(--muted-foreground);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .pc.err .sb{color:var(--destructive)}
 .pc.busy .sb{color:var(--foreground)}
 .pc.busy .ico{animation:nudge 1s var(--ease) infinite}
@@ -163,6 +165,10 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 .ag.d::after{content:'✓';background:var(--ok)}
 .k.on .ag.q::after,.k.on .ag.d::after{box-shadow:0 0 0 1.5px var(--primary)}
 .ag-more{font-size:11px;font-weight:600;opacity:.7}
+.ags.many{gap:1px;right:6px;top:7px}
+.ags.many .ag{width:17px;height:17px}
+.ags.many .ag svg{width:14px;height:14px}
+.ags.many .ag.q::after,.ags.many .ag.d::after{width:9px;height:9px;font-size:7px;line-height:9px;right:-2px;bottom:-2px}
 .k.ask{border-color:var(--ask);animation:askring 1.6s var(--ease) infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes nudge{0%,100%{transform:none}50%{transform:scale(1.15)}}
@@ -486,7 +492,7 @@ function renderPcs() {
     row.querySelector('.nm').textContent = info.name || dev?.name || 'PC';
     const when = info.last ? `Ultimo collegamento ${ago(info.last)}` : '';
     row.querySelector('.sb').textContent = pcBusy === id ? 'Connessione…' : pcErr[id] || (online ? 'Acceso · tocca per collegarti'
-      : dev ? when || 'Tocca per collegarti' : (when ? when + ' · ' : '') + 'tocca e confermalo nel popup');
+      : dev ? when || 'Tocca per collegarti' : (when ? when + ' · ' : '') + 'conferma nel popup');
     row.addEventListener('click', e => { if (!e.target.closest('.x')) openPc(pc); });
     // Rimuovere un PC ritira anche l'autorizzazione di Chrome (dove possibile): per riusarlo si riaggiunge dal popup.
     row.querySelector('.x').addEventListener('click', async () => {
@@ -923,15 +929,16 @@ function agents(box, key, n, prev) {
   const sig = list.map(a => a[1] + a[2]).join(',');
   if (sig === prev) return prev;
   box.innerHTML = '';
-  // Al massimo 2 loghi (prima chi aspetta te, poi chi lavora) + contatore, per non coprire il numero del desktop.
-  for (const [, kind, state] of list.slice(0, 2)) {
+  // Un logo per sessione (prima chi aspetta te, poi chi lavora): fino a 4, più piccoli se sono più di 2; oltre, un contatore.
+  box.classList.toggle('many', list.length > 2);
+  for (const [, kind, state] of list.slice(0, 4)) {
     const b = document.createElement('span');
     b.className = `ag ${kind} ${state}`;
     b.innerHTML = svgOf(kind === 'x' ? 'logo_openai' : 'logo_claude');
     b.title = (kind === 'x' ? 'Codex' : 'Claude Code') + ' · ' + ({ w: 'al lavoro', q: 'aspetta una tua risposta', d: 'ha finito', i: 'fermo' }[state] || '');
     box.append(b);
   }
-  if (list.length > 2) box.insertAdjacentHTML('beforeend', `<span class="ag-more">+${list.length - 2}</span>`);
+  if (list.length > 4) box.insertAdjacentHTML('beforeend', `<span class="ag-more">+${list.length - 4}</span>`);
   key.classList.toggle('ask', list.some(a => a[2] === 'q'));
   if (prev && sig) box.animate([{ transform: 'scale(.7)', opacity: .3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
   return sig;
