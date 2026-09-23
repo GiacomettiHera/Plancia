@@ -31,6 +31,7 @@
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
   --ok: oklch(0.72 0.19 150);
+  --ask: oklch(0.78 0.16 70);
   --shadow: 0 1px 2px 0 rgb(0 0 0 / .05);
   --ease: cubic-bezier(.2, .8, .2, 1);
 }
@@ -62,17 +63,43 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 .screen.on{display:flex;animation:fade .3s var(--ease)}
 @keyframes fade{from{opacity:0;transform:scale(.99)}}
 
-/* ---- collegamento ---- */
-#connect{align-items:center;justify-content:center}
+/* ---- schermata iniziale: i tuoi PC (verticale: una colonna · orizzontale: due) ---- */
+#connect{align-items:center;justify-content:center;overflow:hidden}
 .card{background:var(--card);color:var(--card-foreground);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);box-shadow:var(--shadow)}
-#connect .card{width:min(440px,100%);padding:28px;display:flex;flex-direction:column;gap:14px}
-#connect .brand{font-size:13px;font-weight:500;color:var(--muted-foreground)}
-#connect h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em}
-#connect p{margin:0;color:var(--muted-foreground);font-size:14px;line-height:1.55}
-.btn{appearance:none;border:0;border-radius:var(--radius);height:40px;padding:0 18px;font:500 14px Geist,sans-serif;background:var(--primary);color:var(--primary-foreground);transition:opacity .15s,transform .12s var(--ease)}
+.home{width:min(460px,100%);max-height:100%;padding:24px;display:grid;grid-template-rows:auto minmax(0,1fr);gap:18px}
+.intro{display:flex;flex-direction:column;gap:8px}
+.home .brand{font-size:13px;font-weight:500;color:var(--muted-foreground)}
+.home h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em}
+.home p{margin:0;color:var(--muted-foreground);font-size:14px;line-height:1.55}
+.pcs{display:flex;flex-direction:column;gap:10px;min-height:0}
+#pclist{display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:0;scrollbar-width:none}
+#pclist:empty{display:none}
+.pc{position:relative;display:flex;align-items:center;gap:12px;padding:12px 8px 12px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--background);animation:fade .3s var(--ease) backwards;transition:transform .12s var(--ease),background .15s}
+.dark .pc{background:var(--muted);border-color:transparent}
+.pc:active{transform:scale(.985);background:var(--accent)}
+.pc .ico{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;background:var(--muted);flex:none;position:relative}
+.dark .pc .ico{background:var(--card)}
+.pc .ico svg{width:20px;height:20px}
+.pc .on-dot{position:absolute;right:-2px;bottom:-2px;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px var(--background)}
+.pc .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pc .nm{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc .sb{font-size:12px;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc.err .sb{color:var(--destructive)}
+.pc.busy .sb{color:var(--foreground)}
+.pc.busy .ico{animation:nudge 1s var(--ease) infinite}
+.pc .x{appearance:none;border:0;background:none;color:var(--muted-foreground);width:36px;height:36px;border-radius:var(--radius);display:grid;place-items:center;flex:none}
+.pc .x:active{background:var(--accent)}
+.pc .x svg,.btn svg{width:16px;height:16px}
+.btn{appearance:none;border:0;border-radius:var(--radius);height:40px;padding:0 18px;font:500 14px Geist,sans-serif;background:var(--primary);color:var(--primary-foreground);display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s,transform .12s var(--ease)}
+.btn.sec{background:var(--secondary);color:var(--secondary-foreground)}
 .btn:active{transform:scale(.98);opacity:.9}
 .btn[disabled]{opacity:.5}
 #err{color:var(--destructive);font-size:13px;min-height:1em}
+@media (orientation: landscape){
+  .home{width:min(820px,100%);grid-template-columns:minmax(0,5fr) minmax(0,6fr);grid-template-rows:minmax(0,1fr);align-items:start;gap:28px;padding:24px 28px}
+  .intro{padding-top:4px}
+}
+@media (orientation: landscape) and (max-height: 420px){ .home{padding:18px 22px} .home h1{font-size:20px} }
 
 /* ---- barra ---- */
 #deck{flex-direction:column;gap:10px}
@@ -112,6 +139,24 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 .g{font-weight:600;line-height:1;font-size:clamp(28px,10vmin,44px);letter-spacing:-.04em}
 .ic svg{display:block;width:clamp(28px,9.5vmin,42px);height:clamp(28px,9.5vmin,42px)}
 .ic.emoji svg{width:clamp(34px,11vmin,50px);height:clamp(34px,11vmin,50px)}
+
+/* agenti AI sulla tessera del desktop (Claude Code, Codex) */
+.ags{position:absolute;right:8px;top:8px;display:flex;gap:4px;align-items:center}
+.ag{position:relative;width:22px;height:22px;display:grid;place-items:center;color:currentColor}
+.ag.c{color:#d97757}
+.ag svg{width:18px;height:18px;display:block}
+.ag.w svg{animation:spin 2.4s linear infinite}
+.ag.i svg{opacity:.4}
+.ag.q svg{animation:nudge 1.2s var(--ease) infinite}
+.ag.q::after,.ag.d::after{position:absolute;right:-3px;bottom:-3px;width:11px;height:11px;border-radius:50%;font:700 8px/11px Geist,sans-serif;text-align:center;color:#fff;box-shadow:0 0 0 1.5px var(--card)}
+.ag.q::after{content:'?';background:var(--ask)}
+.ag.d::after{content:'✓';background:var(--ok)}
+.k.on .ag.q::after,.k.on .ag.d::after{box-shadow:0 0 0 1.5px var(--primary)}
+.ag-more{font-size:11px;font-weight:600;opacity:.7}
+.k.ask{border-color:var(--ask);animation:askring 1.6s var(--ease) infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes nudge{0%,100%{transform:none}50%{transform:scale(1.15)}}
+@keyframes askring{0%{box-shadow:0 0 0 0 color-mix(in oklch,var(--ask) 60%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
 
 /* slider */
 .k.sl{padding:14px 16px;gap:12px;align-items:stretch}
@@ -196,12 +241,17 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 <body>
 
 <section id="connect" class="screen on">
-  <div class="card">
-    <div class="brand">Plancia</div>
-    <h1>Collega il PC</h1>
-    <p id="hint">Avvia Plancia sul PC, poi tocca Collega e scegli il PC dall'elenco. La prima volta Android chiede di associare i dispositivi.</p>
-    <div><button id="go" class="btn">Collega</button></div>
-    <div id="err"></div>
+  <div class="card home">
+    <div class="intro">
+      <div class="brand">Plancia</div>
+      <h1 id="htitle">I tuoi PC</h1>
+      <p id="hint"></p>
+    </div>
+    <div class="pcs">
+      <div id="pclist"></div>
+      <div><button id="go" class="btn"></button></div>
+      <div id="err"></div>
+    </div>
   </div>
 </section>
 
@@ -348,23 +398,107 @@ function autoPages(prev, s) {
 function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
 function err(m) { $('err').textContent = m || ''; }
 
-if (!navigator.bluetooth) {
-  $('go').disabled = true;
-  $('hint').textContent = !isSecureContext
-    ? 'Questa pagina deve essere aperta da un indirizzo https:// per usare il Bluetooth.'
-    : 'Il browser non supporta Web Bluetooth. Usa Chrome per Android.';
+// ---- I tuoi PC: quelli già autorizzati si collegano con un tocco; il popup di Chrome serve solo per aggiungerne uno ----
+// (Chrome non permette di personalizzare il popup né di vedere i dispositivi vicini prima che tu ne scelga uno.)
+const KNOWN = 'plancia-pcs'; // id -> { name, last }
+const known = () => { try { return JSON.parse(localStorage.getItem(KNOWN)) || {}; } catch { return {}; } };
+function remember(d, name) {
+  const k = known();
+  k[d.id] = { name: name || k[d.id]?.name || d.name || 'PC', last: Date.now() };
+  try { localStorage.setItem(KNOWN, JSON.stringify(k)); } catch { }
+}
+let pcs = [], pcBusy = null;
+const pcErr = {}, seen = {}, watching = new Map(); // seen: id -> ultimo segnale ricevuto (dove Chrome lo permette)
+const canList = !!navigator.bluetooth?.getDevices;
+
+const ago = t => {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'adesso';
+  if (m < 60) return `${m} min fa`;
+  const d = new Date(t), today = new Date().toDateString() === d.toDateString();
+  return (today ? 'oggi ' : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ' ') + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+};
+
+async function listPcs() {
+  pcs = canList ? await navigator.bluetooth.getDevices().catch(() => []) : [];
+  const k = known();
+  pcs.sort((a, b) => (k[b.id]?.last || 0) - (k[a.id]?.last || 0));
+  renderPcs();
+  watchPcs(true);
+}
+
+// "Acceso": segnali Bluetooth dei PC già autorizzati. Su Chrome per Android è ancora sperimentale: se manca, niente pallino.
+function watchPcs(on) {
+  for (const [, c] of watching) c.abort();
+  watching.clear();
+  if (!on) return;
+  for (const d of pcs) {
+    if (!d.watchAdvertisements) continue;
+    const c = new AbortController();
+    watching.set(d.id, c);
+    d.onadvertisementreceived = () => { const was = Date.now() - (seen[d.id] || 0) < 15000; seen[d.id] = Date.now(); if (!was) renderPcs(); };
+    d.watchAdvertisements({ signal: c.signal }).catch(() => watching.delete(d.id));
+  }
+}
+
+function renderPcs() {
+  const list = $('pclist'), k = known();
+  list.innerHTML = '';
+  for (const d of pcs) {
+    const info = k[d.id] || {}, online = Date.now() - (seen[d.id] || 0) < 15000;
+    const row = document.createElement('div');
+    row.className = 'pc' + (pcBusy === d.id ? ' busy' : pcErr[d.id] ? ' err' : '');
+    row.innerHTML = `<span class="ico">${svgOf('desktop')}${online ? '<span class="on-dot"></span>' : ''}</span><span class="txt"><span class="nm"></span><span class="sb"></span></span><button class="x" aria-label="Rimuovi">${svgOf('dismiss')}</button>`;
+    row.querySelector('.nm').textContent = info.name || d.name || 'PC';
+    row.querySelector('.sb').textContent = pcBusy === d.id ? 'Connessione…' : pcErr[d.id] || (online ? 'Acceso · tocca per collegarti'
+      : info.last ? `Ultimo collegamento ${ago(info.last)}` : 'Tocca per collegarti');
+    row.addEventListener('click', e => { if (!e.target.closest('.x')) openPc(d); });
+    const x = row.querySelector('.x');
+    // Rimuovere un PC ritira l'autorizzazione di Chrome: per usarlo di nuovo si riaggiunge dal popup.
+    if (d.forget) x.addEventListener('click', async () => {
+      if (!confirm(`Rimuovere "${row.querySelector('.nm').textContent}" dai tuoi PC?`)) return;
+      try { await d.forget(); } catch { }
+      const kk = known(); delete kk[d.id]; try { localStorage.setItem(KNOWN, JSON.stringify(kk)); } catch { }
+      listPcs();
+    });
+    else x.remove();
+    list.append(row);
+  }
+  const has = pcs.length > 0;
+  $('htitle').textContent = has ? 'I tuoi PC' : 'Collega il PC';
+  $('go').innerHTML = has ? `${svgOf('add')}<span>Aggiungi PC</span>` : '<span>Collega</span>';
+  $('go').classList.toggle('sec', has);
+  $('hint').textContent = !navigator.bluetooth
+    ? (!isSecureContext ? 'Questa pagina deve essere aperta da un indirizzo https:// per usare il Bluetooth.' : 'Il browser non supporta Web Bluetooth. Usa Chrome per Android.')
+    : has ? 'Tocca un PC per collegarti. Avvia prima Plancia sul PC. Ruota il telefono in verticale per scollegarti e tornare qui.'
+      : "Avvia Plancia sul PC, poi tocca Collega e scegli il PC dall'elenco. La prima volta Android chiede di associare i dispositivi.";
+  $('go').disabled = !navigator.bluetooth;
+}
+
+async function openPc(d) {
+  if (pcBusy) return;
+  err('');
+  pcBusy = d.id;
+  delete pcErr[d.id];
+  renderPcs();
+  try { await connect(d, true); }
+  catch (e) { pcErr[d.id] = e?.message?.includes('compatibile') ? e.message : 'Non raggiungibile: avvia Plancia sul PC e riprova'; }
+  pcBusy = null;
+  renderPcs();
 }
 
 $('go').addEventListener('click', async () => {
   err('');
   try {
     const d = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }] });
-    await connect(d);
+    await listPcs();
+    await openPc(pcs.find(p => p.id === d.id) || d);
   } catch (e) { if (e.name !== 'NotFoundError') err(e.message); }
 });
 
 // ---- Connessione ----
-async function connect(d) {
+// fromList: collegamento scelto dall'utente; se fallisce non si riprova da soli (niente tentativi a vuoto su un PC spento).
+async function connect(d, fromList) {
   if (connecting) return;
   connecting = true;
   try {
@@ -378,6 +512,7 @@ async function connect(d) {
     ch = { cmd, state, layout: lay, info: inf, art, win, icon };
     winVer = null;
     await loadLayout();
+    remember(d, layout.name);
     state.removeEventListener('characteristicvaluechanged', onState);
     state.addEventListener('characteristicvaluechanged', onState);
     await op(() => state.startNotifications());
@@ -386,8 +521,14 @@ async function connect(d) {
     retry = 0;
     $('lost').style.display = 'none';
     $('dot').classList.remove('off');
+    // Annullato nel frattempo (telefono ruotato in verticale): si chiude il collegamento appena aperto.
+    if (device !== d) { try { d.gatt.disconnect(); } catch { } return; }
+    watchPcs(false);
     show('deck');
     keepAwake();
+  } catch (e) {
+    if (fromList) { device = null; try { d.gatt.disconnect(); } catch { } }
+    throw e;
   } finally { connecting = false; }
 }
 
@@ -481,10 +622,40 @@ function onLost() {
   $('dot').classList.add('off');
   $('rtext').textContent = 'Riconnetti';
   $('lost').style.display = 'block';
-  if (retry > 8) { show('connect'); err('Connessione persa. Tocca Collega.'); retry = 0; return; }
+  if (retry > 8) { leave('Connessione persa. Tocca il PC per ricollegarti.'); retry = 0; return; }
   const wait = Math.min(8000, 500 * 2 ** retry++);
-  setTimeout(() => { if (!device.gatt.connected) connect(device).then(() => { $('rtext').textContent = 'Aggiorna'; }).catch(onLost); }, wait);
+  setTimeout(() => { if (device && !device.gatt.connected) connect(device).then(() => { $('rtext').textContent = 'Aggiorna'; }).catch(onLost); }, wait);
 }
+
+// Scollega e torna alla schermata iniziale (telefono in verticale, o collegamento perso del tutto).
+function leave(message) {
+  const d = device;
+  device = null; // così la disconnessione non fa partire i tentativi di riconnessione
+  resetQueue();
+  ch = {};
+  st = null;
+  try { d?.gatt.connected && d.gatt.disconnect(); } catch { }
+  try { wake?.release?.(); } catch { }
+  wake = null;
+  $('lost').style.display = 'none';
+  if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  show('connect');
+  err(message || '');
+  listPcs();
+}
+
+// In verticale ci si scollega; la schermata iniziale funziona in entrambi gli orientamenti.
+const portraitQ = matchMedia('(orientation: portrait)');
+let rotateT;
+function onOrientation() {
+  clearTimeout(rotateT);
+  // Piccola attesa: una rotazione accidentale e subito annullata non scollega.
+  if (portraitQ.matches && device) rotateT = setTimeout(() => { if (portraitQ.matches && device) leave(); }, 450);
+}
+// Più segnali per lo stesso controllo: non tutti i browser li mandano tutti.
+portraitQ.addEventListener('change', onOrientation);
+addEventListener('resize', onOrientation);
+screen.orientation?.addEventListener?.('change', onOrientation);
 
 // Pulsante in alto: rilegge layout e info dal PC, o riconnette se il collegamento è caduto.
 $('refresh').addEventListener('click', async () => {
@@ -495,7 +666,7 @@ $('refresh').addEventListener('click', async () => {
   try {
     if (device?.gatt.connected) { t.textContent = 'Aggiorno…'; want.layout = true; want.win = hasKey('windows'); await sync(); }
     else if (device) { t.textContent = 'Connessione…'; retry = 0; await connect(device); }
-    else show('connect');
+    else leave();
   } catch { }
   await new Promise(r => setTimeout(r, Math.max(0, 500 - (performance.now() - t0))));
   t.textContent = device?.gatt.connected ? 'Aggiorna' : 'Riconnetti';
@@ -507,9 +678,10 @@ async function keepAwake() {
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && device?.gatt.connected) keepAwake(); });
 
+// Schermo intero al primo tocco, senza bloccare l'orientamento (ruotare in verticale deve poter scollegare).
 function goFull() {
   if (document.fullscreenElement || matchMedia('(display-mode: fullscreen)').matches) return;
-  document.documentElement.requestFullscreen?.().then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
+  document.documentElement.requestFullscreen?.().catch(() => {});
 }
 
 // ---- Pagine (con transizione a scorrimento) ----
@@ -660,11 +832,14 @@ function makeKey(k, i) {
   el.append(main, sub);
   const isDesk = k.a === 'desk';
   if (isDesk) { main.className = 'g'; main.textContent = String(k.n || ''); }
+  const ags = isDesk && k.ag !== 0 ? el.appendChild(Object.assign(document.createElement('div'), { className: 'ags' })) : null;
+  let agSig = '';
 
   let shown;
   return {
     el, upd() {
       const x = isDesk ? { on: st.d === k.n, s: k.l || (info.ds || [])[k.n - 1] } : look(k, i);
+      if (ags) agSig = agents(ags, el, k.n, agSig);
       if (!isDesk && x.icon !== shown) {
         const first = shown === undefined;
         shown = x.icon;
@@ -678,6 +853,28 @@ function makeKey(k, i) {
       sub.style.display = s ? '' : 'none';
     }
   };
+}
+
+// Agenti AI al lavoro nel desktop n (info.ag = [[desktop, "c" Claude Code | "x" Codex, stato]], vedi TrayApp.AgentsByDesktop).
+// Logo che gira = lavora · logo con ? e bordo ambra sulla tessera = aspetta una tua risposta · spunta = ha finito · sbiadito = fermo.
+const AG_ORDER = { q: 0, w: 1, d: 2, i: 3 };
+function agents(box, key, n, prev) {
+  const list = (info.ag || []).filter(a => a[0] === n).sort((a, b) => AG_ORDER[a[2]] - AG_ORDER[b[2]]);
+  const sig = list.map(a => a[1] + a[2]).join(',');
+  if (sig === prev) return prev;
+  box.innerHTML = '';
+  // Al massimo 2 loghi (prima chi aspetta te, poi chi lavora) + contatore, per non coprire il numero del desktop.
+  for (const [, kind, state] of list.slice(0, 2)) {
+    const b = document.createElement('span');
+    b.className = `ag ${kind} ${state}`;
+    b.innerHTML = svgOf(kind === 'x' ? 'logo_openai' : 'logo_claude');
+    b.title = (kind === 'x' ? 'Codex' : 'Claude Code') + ' · ' + ({ w: 'al lavoro', q: 'aspetta una tua risposta', d: 'ha finito', i: 'fermo' }[state] || '');
+    box.append(b);
+  }
+  if (list.length > 2) box.insertAdjacentHTML('beforeend', `<span class="ag-more">+${list.length - 2}</span>`);
+  key.classList.toggle('ask', list.some(a => a[2] === 'q'));
+  if (prev && sig) box.animate([{ transform: 'scale(.7)', opacity: .3 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  return sig;
 }
 
 // Tocco breve subito; con pressione lunga configurata si decide al rilascio.
@@ -953,15 +1150,10 @@ function makeNow(k, i, el) {
   requestAnimationFrame(frame);
 })();
 
-// Riconnessione automatica a un PC già autorizzato (se il browser lo consente).
+// All'apertura: elenco dei PC; in orizzontale ci si ricollega da soli all'ultimo usato (in verticale si resta qui).
 (async () => {
-  if (!navigator.bluetooth?.getDevices) return;
-  try {
-    const [d] = await navigator.bluetooth.getDevices();
-    if (!d) return;
-    $('hint').textContent = 'Riconnessione a un PC già associato…';
-    await connect(d);
-  } catch { $('hint').textContent = "Avvia Plancia sul PC, poi tocca Collega e scegli il PC dall'elenco."; }
+  await listPcs();
+  if (pcs.length && !portraitQ.matches) openPc(pcs[0]);
 })();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
