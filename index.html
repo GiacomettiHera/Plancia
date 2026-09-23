@@ -101,6 +101,16 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 }
 @media (orientation: landscape) and (max-height: 420px){ .home{padding:18px 22px} .home h1{font-size:20px} }
 
+/* ---- "Ruota il telefono": i tasti si usano solo in orizzontale ---- */
+#rotate{align-items:center;justify-content:center;text-align:center}
+.rot{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:300px}
+.rot h2{margin:8px 0 0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+.rot p{margin:0 0 8px;color:var(--muted-foreground);font-size:14px;line-height:1.5}
+.rot-ico svg{width:64px;height:64px;display:block;animation:turn 2.4s var(--ease) infinite}
+@keyframes turn{0%,15%{transform:rotate(0)}45%,70%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
+/* In verticale i tasti spariscono subito, prima ancora che il codice reagisca alla rotazione. */
+@media (orientation: portrait){ #deck.on{display:none} }
+
 /* ---- barra ---- */
 #deck{flex-direction:column;gap:10px}
 .bar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto) minmax(0,1fr);align-items:center;gap:10px;height:34px}
@@ -255,6 +265,15 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
   </div>
 </section>
 
+<section id="rotate" class="screen">
+  <div class="rot">
+    <div id="rotico" class="rot-ico"></div>
+    <h2>Ruota il telefono</h2>
+    <p id="rotname"></p>
+    <button id="rotcancel" class="btn sec">Annulla</button>
+  </div>
+</section>
+
 <section id="deck" class="screen">
   <div class="bar">
     <button id="refresh" class="ghost"><span id="dot" class="dot"></span><span id="rtext">Aggiorna</span></button>
@@ -403,13 +422,23 @@ function err(m) { $('err').textContent = m || ''; }
 const KNOWN = 'plancia-pcs'; // id -> { name, last }
 const known = () => { try { return JSON.parse(localStorage.getItem(KNOWN)) || {}; } catch { return {}; } };
 function remember(d, name) {
+  mem.set(d.id, d);
   const k = known();
   k[d.id] = { name: name || k[d.id]?.name || d.name || 'PC', last: Date.now() };
   try { localStorage.setItem(KNOWN, JSON.stringify(k)); } catch { }
 }
+function forgetKnown(id) {
+  const k = known();
+  delete k[id];
+  try { localStorage.setItem(KNOWN, JSON.stringify(k)); } catch { }
+}
+// Righe della lista: { id, dev }. dev = dispositivo pronto (collegamento diretto) oppure null (si conferma nel popup di Chrome).
 let pcs = [], pcBusy = null;
 const pcErr = {}, seen = {}, watching = new Map(); // seen: id -> ultimo segnale ricevuto (dove Chrome lo permette)
 const canList = !!navigator.bluetooth?.getDevices;
+// Dispositivi ottenuti in questa sessione: servono quando Chrome non fornisce l'elenco dei PC autorizzati (getDevices),
+// cosa frequente su Android. Così almeno il PC appena usato si ricollega con un tocco.
+const mem = new Map();
 
 const ago = t => {
   const m = Math.round((Date.now() - t) / 60000);
@@ -419,9 +448,14 @@ const ago = t => {
   return (today ? 'oggi ' : d.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ' ') + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 };
 
+// Tre fonti: PC autorizzati di Chrome, PC usati in questa sessione, PC ricordati dalla pagina (nome e ultimo collegamento).
 async function listPcs() {
-  pcs = canList ? await navigator.bluetooth.getDevices().catch(() => []) : [];
+  const granted = canList ? await navigator.bluetooth.getDevices().catch(() => []) : [];
+  const byId = new Map();
+  for (const d of [...granted, ...mem.values()]) byId.set(d.id, d);
   const k = known();
+  pcs = [...byId.values()].map(dev => ({ id: dev.id, dev }));
+  for (const id of Object.keys(k)) if (!byId.has(id)) pcs.push({ id, dev: null });
   pcs.sort((a, b) => (k[b.id]?.last || 0) - (k[a.id]?.last || 0));
   renderPcs();
   watchPcs(true);
@@ -432,8 +466,8 @@ function watchPcs(on) {
   for (const [, c] of watching) c.abort();
   watching.clear();
   if (!on) return;
-  for (const d of pcs) {
-    if (!d.watchAdvertisements) continue;
+  for (const { dev: d } of pcs) {
+    if (!d?.watchAdvertisements) continue;
     const c = new AbortController();
     watching.set(d.id, c);
     d.onadvertisementreceived = () => { const was = Date.now() - (seen[d.id] || 0) < 15000; seen[d.id] = Date.now(); if (!was) renderPcs(); };
@@ -444,24 +478,24 @@ function watchPcs(on) {
 function renderPcs() {
   const list = $('pclist'), k = known();
   list.innerHTML = '';
-  for (const d of pcs) {
-    const info = k[d.id] || {}, online = Date.now() - (seen[d.id] || 0) < 15000;
+  for (const pc of pcs) {
+    const { id, dev } = pc, info = k[id] || {}, online = Date.now() - (seen[id] || 0) < 15000;
     const row = document.createElement('div');
-    row.className = 'pc' + (pcBusy === d.id ? ' busy' : pcErr[d.id] ? ' err' : '');
+    row.className = 'pc' + (pcBusy === id ? ' busy' : pcErr[id] ? ' err' : '');
     row.innerHTML = `<span class="ico">${svgOf('desktop')}${online ? '<span class="on-dot"></span>' : ''}</span><span class="txt"><span class="nm"></span><span class="sb"></span></span><button class="x" aria-label="Rimuovi">${svgOf('dismiss')}</button>`;
-    row.querySelector('.nm').textContent = info.name || d.name || 'PC';
-    row.querySelector('.sb').textContent = pcBusy === d.id ? 'Connessione…' : pcErr[d.id] || (online ? 'Acceso · tocca per collegarti'
-      : info.last ? `Ultimo collegamento ${ago(info.last)}` : 'Tocca per collegarti');
-    row.addEventListener('click', e => { if (!e.target.closest('.x')) openPc(d); });
-    const x = row.querySelector('.x');
-    // Rimuovere un PC ritira l'autorizzazione di Chrome: per usarlo di nuovo si riaggiunge dal popup.
-    if (d.forget) x.addEventListener('click', async () => {
+    row.querySelector('.nm').textContent = info.name || dev?.name || 'PC';
+    const when = info.last ? `Ultimo collegamento ${ago(info.last)}` : '';
+    row.querySelector('.sb').textContent = pcBusy === id ? 'Connessione…' : pcErr[id] || (online ? 'Acceso · tocca per collegarti'
+      : dev ? when || 'Tocca per collegarti' : (when ? when + ' · ' : '') + 'tocca e confermalo nel popup');
+    row.addEventListener('click', e => { if (!e.target.closest('.x')) openPc(pc); });
+    // Rimuovere un PC ritira anche l'autorizzazione di Chrome (dove possibile): per riusarlo si riaggiunge dal popup.
+    row.querySelector('.x').addEventListener('click', async () => {
       if (!confirm(`Rimuovere "${row.querySelector('.nm').textContent}" dai tuoi PC?`)) return;
-      try { await d.forget(); } catch { }
-      const kk = known(); delete kk[d.id]; try { localStorage.setItem(KNOWN, JSON.stringify(kk)); } catch { }
+      try { await dev?.forget?.(); } catch { }
+      mem.delete(id);
+      forgetKnown(id);
       listPcs();
     });
-    else x.remove();
     list.append(row);
   }
   const has = pcs.length > 0;
@@ -475,9 +509,22 @@ function renderPcs() {
   $('go').disabled = !navigator.bluetooth;
 }
 
-async function openPc(d) {
+// Popup di Chrome (serve un tocco): nuovo PC, o PC ricordato ma non fornito da Chrome.
+async function choose() {
+  const d = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }] });
+  mem.set(d.id, d);
+  return d;
+}
+
+async function openPc(pc) {
   if (pcBusy) return;
   err('');
+  goFull(); // schermo intero ora che c'è un tocco
+  let d = pc.dev;
+  if (!d) {
+    try { d = await choose(); } catch (e) { if (e.name !== 'NotFoundError') err(e.message); return; }
+    if (d.id !== pc.id) { forgetKnown(pc.id); await listPcs(); } // scelto un altro PC dal popup
+  }
   pcBusy = d.id;
   delete pcErr[d.id];
   renderPcs();
@@ -490,9 +537,9 @@ async function openPc(d) {
 $('go').addEventListener('click', async () => {
   err('');
   try {
-    const d = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }] });
+    const d = await choose();
     await listPcs();
-    await openPc(pcs.find(p => p.id === d.id) || d);
+    await openPc(pcs.find(p => p.id === d.id) || { id: d.id, dev: d });
   } catch (e) { if (e.name !== 'NotFoundError') err(e.message); }
 });
 
@@ -524,7 +571,7 @@ async function connect(d, fromList) {
     // Annullato nel frattempo (telefono ruotato in verticale): si chiude il collegamento appena aperto.
     if (device !== d) { try { d.gatt.disconnect(); } catch { } return; }
     watchPcs(false);
-    show('deck');
+    enterDeck();
     keepAwake();
   } catch (e) {
     if (fromList) { device = null; try { d.gatt.disconnect(); } catch { } }
@@ -644,13 +691,25 @@ function leave(message) {
   listPcs();
 }
 
-// In verticale ci si scollega; la schermata iniziale funziona in entrambi gli orientamenti.
+// I tasti si usano solo in orizzontale. Collegandosi in verticale compare "Ruota il telefono" finché non lo giri;
+// girandolo in verticale mentre usi i tasti ci si scollega e si torna subito alla schermata iniziale.
+// (Non si blocca l'orientamento: col blocco, girare il telefono non scollegherebbe più.)
 const portraitQ = matchMedia('(orientation: portrait)');
-let rotateT;
+function enterDeck() {
+  if (portraitQ.matches) {
+    $('rotname').textContent = `Collegato a ${layout?.name || 'PC'}. Gira il telefono in orizzontale per usare i tasti.`;
+    show('rotate');
+  } else {
+    show('deck');
+  }
+}
+$('rotico').innerHTML = svgOf('phone');
+$('rotcancel').addEventListener('click', () => leave());
 function onOrientation() {
-  clearTimeout(rotateT);
-  // Piccola attesa: una rotazione accidentale e subito annullata non scollega.
-  if (portraitQ.matches && device) rotateT = setTimeout(() => { if (portraitQ.matches && device) leave(); }, 450);
+  if (!device) return;
+  const waiting = $('rotate').classList.contains('on');
+  if (portraitQ.matches) { if (!waiting) leave(); }
+  else if (waiting) { show('deck'); renderTabs.last = null; render(); }
 }
 // Più segnali per lo stesso controllo: non tutti i browser li mandano tutti.
 portraitQ.addEventListener('change', onOrientation);
@@ -771,7 +830,8 @@ function render() {
   update();
 }
 let resizeT;
-addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { renderTabs.last = null; render(); }, 120); });
+// In verticale i tasti non si vedono: niente ridisegno inutile (e niente griglia verticale per un attimo).
+addEventListener('resize', () => { clearTimeout(resizeT); if (!portraitQ.matches) resizeT = setTimeout(() => { renderTabs.last = null; render(); }, 120); });
 
 function update() {
   if (!layout || !st) return;
@@ -1153,7 +1213,8 @@ function makeNow(k, i, el) {
 // All'apertura: elenco dei PC; in orizzontale ci si ricollega da soli all'ultimo usato (in verticale si resta qui).
 (async () => {
   await listPcs();
-  if (pcs.length && !portraitQ.matches) openPc(pcs[0]);
+  // (Solo se il dispositivo è già pronto: il popup di Chrome si può aprire solo dopo un tuo tocco.)
+  if (pcs[0]?.dev && !portraitQ.matches) openPc(pcs[0]);
 })();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
