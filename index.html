@@ -246,7 +246,7 @@ const fmt = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + '
 
 let device, ch = {}, layout = null, info = {}, infoAt = 0, st = null, artVer = -1, artUrl = null;
 let wins = null, winVer = null, iconsVer = 0;
-let page = 0, stack = [], views = [], wake, retry = 0, connecting = false, autoFrom = null, firstRender = true;
+let page = 0, stack = [], views = [], wake, retry = 0, connecting = false, firstRender = true;
 const armed = new Set();
 
 // ---- Coda GATT: una operazione alla volta, i comandi passano davanti alle letture lunghe ----
@@ -316,8 +316,33 @@ function parseState(dv) {
     apps: Array.from(b.slice(9), x => x === 255 ? -1 : x)
   };
 }
-const meetingOf = s => !!(s && s.f & 16);
-const inMeeting = () => meetingOf(st);
+const inMeeting = () => !!(st && st.f & 16);
+
+// ---- Pagine di default (DefaultPages.cs): regola unica per tutte ----
+// v = 'off' → mai visibile · v = 'auto' → visibile solo col suo evento attivo (bit t del byte 7 dello STATE) · assente → normale
+const triggered = (p, s) => p.t != null && !!(s && s.f >> p.t & 1);
+const visible = (i, s = st) => { const p = layout?.pages[i]; return !!p && p.v !== 'off' && (p.v !== 'auto' || triggered(p, s)); };
+const firstVisible = () => Math.max(0, layout.pages.findIndex((_, i) => visible(i)));
+let autoFrom = null; // pagina da cui si è partiti quando una pagina Auto si è aperta da sola
+
+// Evento che scatta → apre la pagina Auto; evento finito → si torna dov'eri e la scheda sparisce.
+function autoPages(prev, s) {
+  if (!layout) return;
+  layout.pages.forEach((p, i) => {
+    if (p.v !== 'auto') return;
+    const was = triggered(p, prev), now = triggered(p, s);
+    if (now && !was && page !== i && autoFrom == null) { autoFrom = page; goPage(i); }
+    else if (!now && was) {
+      if (page === i) {
+        const back = autoFrom != null && visible(autoFrom, s) ? autoFrom : firstVisible();
+        const j = stack.lastIndexOf(back);
+        if (j >= 0) stack.splice(j, 1);
+        setPage(back, true);
+      }
+      autoFrom = null;
+    }
+  });
+}
 
 // ---- Schermate ----
 function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
@@ -374,8 +399,8 @@ async function loadLayout() {
   for (const p of l.pages) for (const k of p.keys) if (k.a === 'app.slider') k._s = s < 11 ? s++ : -1;
   l._base = s;
   layout = l;
-  if (page >= l.pages.length) { page = 0; stack = []; }
-  stack = stack.filter(p => p < l.pages.length);
+  if (page >= l.pages.length || l.pages[page].v === 'off') { page = firstVisible(); stack = []; }
+  stack = stack.filter(p => p < l.pages.length && l.pages[p].v !== 'off');
   firstRender = true;
   render();
 }
@@ -443,23 +468,11 @@ function onStateBytes(dv) {
   if (prev && s.v !== prev.v) want.layout = true;
   if (!prev || s.iv !== prev.iv) want.info = true;
   if (want.layout || want.info) sync();
-  autoTeams(prev, s);
+  autoPages(prev, s);
+  // Le schede seguono la visibilità delle pagine (una pagina Auto compare e sparisce con il suo evento).
+  const vis = layout ? layout.pages.map((_, i) => visible(i)).join() : '';
+  if (vis !== onStateBytes.vis) { onStateBytes.vis = vis; if (layout) renderTabs(); }
   update();
-}
-
-// In riunione apre la pagina Teams; alla fine torna dov'eri (se non ti sei spostato).
-function autoTeams(prev, s) {
-  const tp = layout?.tp ?? -1, was = meetingOf(prev), now = meetingOf(s);
-  if (tp < 0 || tp >= layout.pages.length || was === now) return;
-  if (now && page !== tp) { autoFrom = page; goPage(tp); }
-  else if (!now) {
-    if (autoFrom != null && page === tp) {
-      const i = stack.lastIndexOf(autoFrom);
-      if (i >= 0) stack.splice(i, 1);
-      setPage(autoFrom, true);
-    }
-    autoFrom = null;
-  }
 }
 
 function onLost() {
@@ -508,21 +521,28 @@ function setPage(p, back) {
   if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(swap);
   else swap();
 }
+// Un tasto "Apri pagina" può aprire anche una pagina Auto fuori dal suo evento; una disattivata no.
 function goPage(p) {
-  if (!layout || p === page) return;
+  if (!layout || p === page || layout.pages[p]?.v === 'off') return;
   stack.push(page);
   setPage(p, p < page);
 }
-function goBack() { setPage(stack.length ? stack.pop() : 0, true); }
+function goBack() {
+  let p = stack.pop();
+  while (p != null && layout.pages[p]?.v === 'off') p = stack.pop();
+  setPage(p ?? firstVisible(), true);
+}
 
 function renderTabs() {
   const box = $('tabs'), keep = box.scrollLeft;
   box.innerHTML = '';
-  if (layout.pages.length < 2) return;
+  // Schede: le pagine visibili, più quella aperta (es. una pagina Auto aperta da un tasto).
+  const tabs = layout.pages.map((p, i) => ({ p, i })).filter(({ i }) => visible(i) || i === page);
+  if (tabs.length < 2) return;
   const pill = document.createElement('div');
   pill.className = 'pill';
   box.append(pill);
-  layout.pages.forEach((p, i) => {
+  tabs.forEach(({ p, i }) => {
     const b = document.createElement('button');
     b.className = 'tab' + (i === page ? ' on' : '');
     b.textContent = p.n || `Pagina ${i + 1}`;
