@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#131417">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>Plancia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--acc:oklch(0.78 0.15 65);--acc-d:oklch(0.55 0.13 55);--bg:#131417;--key:#1f2024;--ink:#e8e6e3;--mute:#8d8a83;--ok:oklch(0.78 0.16 150)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none;user-select:none}
+.screen{position:fixed;inset:0;display:none;padding:max(14px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left))}
+.screen.on{display:flex}
+.mono{font-family:'IBM Plex Mono',monospace}
+#connect{flex-direction:column;justify-content:center;align-items:flex-start;gap:18px;max-width:560px;margin:0 auto}
+#connect h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+#connect p{margin:0;color:var(--mute);font-size:14px;line-height:1.5}
+.btn{appearance:none;border:0;border-radius:14px;padding:16px 26px;font:700 16px Manrope,sans-serif;background:var(--acc);color:#1a1206;box-shadow:inset 0 -4px 0 var(--acc-d)}
+.btn:active{transform:translateY(2px);box-shadow:inset 0 -2px 0 var(--acc-d)}
+.btn[disabled]{opacity:.5}
+#err{color:oklch(0.75 0.15 25);font-size:13px;min-height:1em}
+#deck{flex-direction:column;gap:12px}
+.bar{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mute);height:20px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:8px}
+.dot.off{background:oklch(0.7 0.15 25)}
+#grid{flex:1;display:grid;gap:12px;min-height:0}
+.k{border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:0;background:var(--key);box-shadow:inset 0 -4px 0 #0b0b0d,inset 0 1px 0 #2e2f35;transition:background .12s,box-shadow .12s,transform .06s}
+.k.press{transform:translateY(2px);box-shadow:inset 0 -1px 0 #0b0b0d}
+.k.on{background:var(--acc);color:#1a1206;box-shadow:inset 0 -4px 0 var(--acc-d),0 0 24px oklch(0.78 0.15 65 / .35)}
+.k.empty{background:transparent;box-shadow:none;border:1.5px dashed #2a2b30}
+.g{font-weight:800;line-height:1;font-size:clamp(20px,6vmin,30px);font-family:'IBM Plex Mono',monospace}
+.k.desk .g{font-family:Manrope,sans-serif;font-size:clamp(30px,11vmin,48px);letter-spacing:-.02em}
+.l{font-size:12px;font-weight:600;opacity:.6;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90%}
+.k.on .l{opacity:.85}
+#lost{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#2a1f10;color:var(--acc);border:1px solid #4a3515;padding:6px 12px;border-radius:999px;font-size:12px;display:none}
+</style>
+</head>
+<body>
+
+<section id="connect" class="screen on">
+  <div class="mono" style="font-size:12px;letter-spacing:.12em;color:var(--acc)">PLANCIA</div>
+  <h1>Collega il PC via Bluetooth</h1>
+  <p id="hint">Avvia Plancia sul PC, poi tocca Collega e scegli il PC dall'elenco. La prima volta Android chiede di associare i dispositivi.</p>
+  <button id="go" class="btn">Collega</button>
+  <div id="err"></div>
+</section>
+
+<section id="deck" class="screen">
+  <div class="bar mono">
+    <div><span id="dot" class="dot"></span><span id="pcname">PC</span></div>
+    <div id="deskinfo"></div>
+  </div>
+  <div id="grid"></div>
+  <div id="lost" class="mono">Riconnessione…</div>
+</section>
+
+<script>
+const SVC = '7a1e0000-5c3b-4c1e-9f1a-2b7d9c3e4f10';
+const CMD = '7a1e0001-5c3b-4c1e-9f1a-2b7d9c3e4f10';
+const STATE = '7a1e0002-5c3b-4c1e-9f1a-2b7d9c3e4f10';
+const LAYOUT = '7a1e0003-5c3b-4c1e-9f1a-2b7d9c3e4f10';
+const GLYPH = {
+  'media.prev': '|◀\uFE0E', 'media.playpause': '▶\uFE0E❚❚', 'media.next': '▶\uFE0E|',
+  'vol.mute': 'MUTO', 'vol.down': '−', 'vol.up': '+', deskNext: '→', deskPrev: '←'
+};
+const $ = id => document.getElementById(id);
+const dec = new TextDecoder(), enc = new TextEncoder();
+let device, cmdChar, layoutChar, layout = null, state = { d: 0, c: 0, v: -1 }, wake, retry = 0, manualClose = false;
+
+// Le operazioni GATT vanno serializzate: una alla volta.
+let q = Promise.resolve();
+const gatt = fn => (q = q.then(fn, fn));
+
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
+function err(m) { $('err').textContent = m || ''; }
+const json = dv => JSON.parse(dec.decode(dv));
+
+if (!navigator.bluetooth) {
+  $('go').disabled = true;
+  $('hint').textContent = !isSecureContext
+    ? 'Questa pagina deve essere aperta da un indirizzo https:// per usare il Bluetooth.'
+    : 'Il browser non supporta Web Bluetooth. Usa Chrome per Android.';
+}
+
+$('go').addEventListener('click', async () => {
+  err('');
+  try { await document.documentElement.requestFullscreen?.(); await screen.orientation?.lock?.('landscape'); } catch {}
+  try {
+    const d = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }] });
+    await connect(d);
+  } catch (e) { if (e.name !== 'NotFoundError') err(e.message); }
+});
+
+async function connect(d) {
+  device = d;
+  device.removeEventListener('gattserverdisconnected', onLost);
+  device.addEventListener('gattserverdisconnected', onLost);
+  const server = await device.gatt.connect();
+  const svc = await server.getPrimaryService(SVC);
+  cmdChar = await svc.getCharacteristic(CMD);
+  layoutChar = await svc.getCharacteristic(LAYOUT);
+  const st = await svc.getCharacteristic(STATE);
+  await loadLayout();
+  st.removeEventListener('characteristicvaluechanged', onState);
+  st.addEventListener('characteristicvaluechanged', onState);
+  await st.startNotifications();
+  applyState(json(await st.readValue()));
+  retry = 0;
+  $('lost').style.display = 'none';
+  $('dot').classList.remove('off');
+  show('deck');
+  keepAwake();
+}
+
+async function loadLayout() {
+  layout = json(await layoutChar.readValue());
+  $('pcname').textContent = (layout.name || 'PC').toUpperCase();
+  render();
+}
+
+function onState(e) { applyState(json(e.target.value)); }
+
+async function applyState(s) {
+  const reload = layout && s.v !== state.v && state.v !== -1;
+  state = s;
+  if (reload) await gatt(loadLayout);
+  const k = layout?.keys.find(k => k.a === 'desk' && k.n === s.d);
+  $('deskinfo').textContent = `DESKTOP ${s.d}/${s.c}` + (k?.l ? ' · ' + k.l.toUpperCase() : '');
+  document.querySelectorAll('.k.desk').forEach(el => el.classList.toggle('on', +el.dataset.n === s.d));
+}
+
+function render() {
+  const g = $('grid'), portrait = innerHeight > innerWidth;
+  const cols = portrait ? layout.rows : layout.cols, rows = portrait ? layout.cols : layout.rows;
+  g.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  g.style.gridTemplateRows = `repeat(${rows},1fr)`;
+  g.innerHTML = '';
+  layout.keys.slice(0, cols * rows).forEach((k, i) => {
+    const el = document.createElement('div');
+    el.className = 'k' + (k.a === 'none' ? ' empty' : k.a === 'desk' ? ' desk' : '');
+    if (k.a === 'desk') { el.dataset.n = k.n; if (k.n === state.d) el.classList.add('on'); }
+    if (k.a !== 'none') {
+      el.innerHTML = `<div class="g"></div><div class="l"></div>`;
+      el.firstChild.textContent = k.a === 'desk' ? k.n : (GLYPH[k.a] || '•');
+      el.lastChild.textContent = k.l || '';
+      el.addEventListener('pointerdown', () => press(i, el));
+    }
+    g.appendChild(el);
+  });
+}
+addEventListener('resize', () => layout && render());
+
+function press(i, el) {
+  el.classList.add('press');
+  setTimeout(() => el.classList.remove('press'), 120);
+  navigator.vibrate?.(12);
+  if (!cmdChar) return;
+  const data = enc.encode(JSON.stringify({ key: i }));
+  gatt(() => (cmdChar.writeValueWithoutResponse ? cmdChar.writeValueWithoutResponse(data) : cmdChar.writeValue(data)).catch(() => {}));
+}
+
+async function onLost() {
+  if (manualClose) return;
+  $('dot').classList.add('off');
+  $('lost').style.display = 'block';
+  if (retry > 8) { show('connect'); err('Connessione persa. Tocca Collega.'); return; }
+  const wait = Math.min(8000, 500 * 2 ** retry++);
+  setTimeout(() => connect(device).catch(onLost), wait);
+}
+
+async function keepAwake() {
+  try { wake = await navigator.wakeLock?.request('screen'); } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && device?.gatt.connected) keepAwake(); });
+
+// Riconnessione automatica a un PC già autorizzato (se il browser lo consente).
+(async () => {
+  if (!navigator.bluetooth?.getDevices) return;
+  try {
+    const [d] = await navigator.bluetooth.getDevices();
+    if (!d) return;
+    $('hint').textContent = 'Riconnessione a un PC già associato…';
+    await connect(d);
+  } catch { $('hint').textContent = "Avvia Plancia sul PC, poi tocca Collega e scegli il PC dall'elenco."; }
+})();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
