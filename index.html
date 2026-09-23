@@ -9,9 +9,9 @@
 <title>Plancia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<link id="icofont" rel="stylesheet">
 <style>
-:root{--acc:oklch(0.78 0.15 65);--acc-d:oklch(0.55 0.13 55);--red:oklch(0.68 0.2 25);--bg:#131417;--key:#1f2024;--ink:#e8e6e3;--mute:#8d8a83;--ok:oklch(0.78 0.16 150)}
+:root{--acc:oklch(0.78 0.15 65);--acc-d:oklch(0.55 0.13 55);--bg:#131417;--key:#1f2024;--ink:#e8e6e3;--mute:#8d8a83;--ok:oklch(0.78 0.16 150);--bad:oklch(0.64 0.19 25);--bad-d:oklch(0.46 0.15 25);--track:#2f3036}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 .screen{position:fixed;inset:0;display:none;padding:max(14px,env(safe-area-inset-top)) max(22px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(22px,env(safe-area-inset-left))}
@@ -23,97 +23,61 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 .btn{appearance:none;border:0;border-radius:14px;padding:16px 26px;font:700 16px Manrope,sans-serif;background:var(--acc);color:#1a1206;box-shadow:inset 0 -4px 0 var(--acc-d)}
 .btn:active{transform:translateY(2px);box-shadow:inset 0 -2px 0 var(--acc-d)}
 .btn[disabled]{opacity:.5}
-#err{color:var(--red);font-size:13px;min-height:1em}
+#err{color:oklch(0.75 0.15 25);font-size:13px;min-height:1em}
 #deck{flex-direction:column;gap:12px}
-.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;color:var(--mute);height:24px}
-.bar>div{display:flex;align-items:center;gap:8px;min-width:0}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;flex:none}
-.dot.off{background:var(--red)}
-#pages{display:flex;gap:6px;align-items:center}
-.pd{width:6px;height:6px;border-radius:3px;background:#3a3b40;transition:width .2s,background .2s}
-.pd.on{background:var(--acc);width:16px}
-#pgname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#editBtn{appearance:none;border:1px solid #2c2d32;background:transparent;color:var(--mute);font:500 12px 'IBM Plex Mono',monospace;padding:3px 10px;border-radius:8px}
-#editBtn.on{background:var(--acc);color:#1a1206;border-color:var(--acc)}
-#grid{flex:1;display:grid;gap:12px;min-height:0;touch-action:none}
-
-.k{position:relative;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:0;min-width:0;background:var(--key);box-shadow:inset 0 -4px 0 #0b0b0d,inset 0 1px 0 #2e2f35;transition:background .12s,box-shadow .12s,transform .06s,opacity .2s;touch-action:none}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;color:var(--mute);height:20px;white-space:nowrap}
+.bar>div{overflow:hidden;text-overflow:ellipsis}
+#pg{color:var(--ink);font-weight:600;letter-spacing:.04em}
+#pg.back::before{content:'‹ ';color:var(--acc)}
+#tms{color:var(--acc);margin-right:14px}
+#tms.bad{color:var(--bad)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:8px}
+.dot.off{background:oklch(0.7 0.15 25)}
+#grid{flex:1;display:grid;gap:12px;min-height:0}
+.k{position:relative;overflow:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:0;min-width:0;background:var(--key);box-shadow:inset 0 -4px 0 #0b0b0d,inset 0 1px 0 #2e2f35;transition:background .12s,box-shadow .12s,transform .06s,opacity .12s;touch-action:none}
 .k.press{transform:translateY(2px);box-shadow:inset 0 -1px 0 #0b0b0d}
-.k.custom{box-shadow:inset 0 -4px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
-.k.on{background:var(--acc)!important;color:#1a1206!important;box-shadow:inset 0 -4px 0 var(--acc-d),0 0 24px oklch(0.78 0.15 65 / .35)}
-.k.red{color:var(--red);background:#2a1515;box-shadow:inset 0 -4px 0 #140909,inset 0 0 0 1.5px oklch(0.55 0.18 25)}
-.k.danger{background:oklch(0.55 0.19 25);color:#fff;box-shadow:inset 0 -4px 0 oklch(0.4 0.15 25)}
-.k.dim{opacity:.45}
+.k.on{background:var(--acc);color:#1a1206;box-shadow:inset 0 -4px 0 var(--acc-d),0 0 24px oklch(0.78 0.15 65 / .35)}
+.k.bad{background:var(--bad);color:#fff;box-shadow:inset 0 -4px 0 var(--bad-d)}
+.k.col{background:var(--kc);box-shadow:inset 0 -4px 0 rgb(0 0 0 / .35)}
+.k.col.lt{color:#1a1206}
+.k.col.on{background:var(--kc);box-shadow:inset 0 0 0 3px var(--ink),0 0 24px rgb(255 255 255 / .2)}
+.k.dim{opacity:.4}
 .k.empty{background:transparent;box-shadow:none;border:1.5px dashed #2a2b30}
-.g{font-weight:800;line-height:1;font-size:clamp(20px,6vmin,30px);font-family:'IBM Plex Mono',monospace}
+.k.lg::after{content:'';position:absolute;right:10px;bottom:10px;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.k.on.lg::after,.k.col.lg::after{background:currentColor;opacity:.6}
+.g{font-weight:800;line-height:1;font-size:clamp(18px,6vmin,30px);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.g.sm{font-size:clamp(13px,4vmin,20px);letter-spacing:.04em}
 .k.desk .g{font-family:Manrope,sans-serif;font-size:clamp(30px,11vmin,48px);letter-spacing:-.02em}
-.l{font-size:12px;font-weight:600;opacity:.65;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90%}
-.k.on .l,.k.red .l,.k.danger .l,.k.custom .l{opacity:.9}
-.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:clamp(28px,10vmin,46px);line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 500,'opsz' 40;transition:font-variation-settings .2s}
-.k.on .ms,.k.danger .ms{font-variation-settings:'FILL' 1,'wght' 500,'opsz' 40}
-.ldot{position:absolute;right:10px;bottom:10px;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.45}
-
-/* Microfono (Teams e sistema) */
-.k.mic svg{width:clamp(34px,12vmin,54px);height:auto;display:block}
-.k.mic .slash{opacity:0;transition:opacity .15s}
-.k.mic[data-t="0"]{opacity:.45}
-.k.mic[data-t="1"]{color:#fff;animation:live 2.4s ease-in-out infinite}
-.k.mic[data-t="2"]{color:var(--red);background:#2a1515;box-shadow:inset 0 -4px 0 #140909,inset 0 0 0 1.5px oklch(0.55 0.18 25)}
-.k.mic[data-t="2"] .slash{opacity:1}
-.k.mic[data-t="3"]{color:var(--acc)}
-.k.pop{animation:pop .28s ease-out}
-.k.mic[data-t="1"].pop{animation:pop .28s ease-out,live 2.4s ease-in-out .28s infinite}
-@keyframes live{0%,100%{box-shadow:inset 0 -4px 0 #0b0b0d,inset 0 1px 0 #2e2f35,0 0 0 0 rgba(255,255,255,0)}50%{box-shadow:inset 0 -4px 0 #0b0b0d,inset 0 1px 0 #2e2f35,0 0 0 6px rgba(255,255,255,.12)}}
-@keyframes pop{0%{transform:scale(.93)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
-
-/* Play / Pausa */
-.k.pp svg{width:clamp(34px,12vmin,52px);height:auto;display:block;overflow:visible}
-.k.pp .i-play,.k.pp .i-pause{transform-box:view-box;transform-origin:12px 12px;transition:transform .35s cubic-bezier(.3,1.5,.5,1),opacity .2s}
-.k.pp .i-pause{opacity:0;transform:scale(.3) rotate(90deg)}
-.k.pp[data-p="1"] .i-play{opacity:0;transform:scale(.3) rotate(-90deg)}
-.k.pp[data-p="1"] .i-pause{opacity:1;transform:none}
-.k.pp[data-p="0"]{opacity:.45}
-.k.pp[data-p="1"]{color:#fff}
-.eq{position:absolute;top:12px;right:12px;display:flex;gap:2px;align-items:flex-end;height:14px;opacity:0;transition:opacity .2s}
-.eq i{width:3px;background:var(--acc);border-radius:1px;height:4px}
-.k[data-p="1"] .eq{opacity:1}
-.k[data-p="1"] .eq i{animation:eq .9s ease-in-out infinite}
-.k[data-p="1"] .eq i:nth-child(2){animation-delay:-.3s}
-.k[data-p="1"] .eq i:nth-child(3){animation-delay:-.6s}
-@keyframes eq{0%,100%{height:4px}50%{height:14px}}
-
-/* In riproduzione */
-.k.now{overflow:hidden;flex-direction:row;align-items:stretch;justify-content:flex-start;gap:0}
-.k.now .art{flex:none;aspect-ratio:1;height:100%;background:#2a2b30 center/cover no-repeat;border-radius:16px 0 0 16px;display:flex;align-items:center;justify-content:center;color:#4a4b52}
-.k.now .art.has .ms{display:none}
-.k.now .meta{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 34px 0 16px}
-.k.now .tt{font-weight:700;font-size:clamp(14px,4.2vmin,20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.k.now .ar{font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.k.now.col{flex-direction:column}
-.k.now.col .art{position:absolute;inset:0;height:auto;aspect-ratio:auto;border-radius:16px}
-.k.now.col .meta{position:relative;margin-top:auto;flex:none;padding:10px 12px;background:rgba(10,10,12,.72);border-radius:0 0 16px 16px}
-.k.now[data-p="0"] .tt{color:var(--mute)}
-.k.now[data-p="2"] .art{filter:saturate(.4) brightness(.7)}
-
-/* Slider */
-.k.slider{overflow:hidden;align-items:stretch;justify-content:stretch}
-.k.slider .fill{position:absolute;left:0;bottom:0;background:#34353b;transition:width .08s linear,height .08s linear}
-.k.slider[data-o="h"] .fill{top:0;border-right:3px solid var(--acc)}
-.k.slider[data-o="v"] .fill{right:0;border-top:3px solid var(--acc)}
-.k.slider .sv{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
-.k.slider .g{color:var(--acc);font-size:clamp(20px,7vmin,32px)}
-.k.slider.muted .g{color:var(--red)}
-.k.slider.muted .fill{border-color:var(--red)}
-.k.slider.off .g{color:var(--mute)}
-.k.slider.off .fill{border-color:#3a3b40}
-
-/* Modifica */
-#grid.editing .k:not(.empty){animation:wiggle .28s ease-in-out infinite alternate}
-#grid.editing .k:nth-child(2n){animation-delay:-.14s}
-.k.dragging{z-index:5;pointer-events:none;animation:none!important;transition:none;opacity:.92;box-shadow:0 12px 30px rgba(0,0,0,.5),inset 0 0 0 2px var(--acc)}
-.k.drop{outline:2px dashed var(--acc);outline-offset:3px}
-@keyframes wiggle{from{transform:rotate(-1.2deg)}to{transform:rotate(1.2deg)}}
-
+.ico{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:clamp(26px,9vmin,40px);line-height:1;letter-spacing:normal;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;overflow:hidden;max-width:90%}
+.l{font-size:12px;font-weight:600;opacity:.6;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90%}
+.k.on .l,.k.bad .l,.k.col .l{opacity:.85}
+/* slider */
+.k.sl{padding:14px 16px;gap:10px;align-items:stretch}
+.sl .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
+.sl .l{max-width:none;opacity:.8}
+.sl .val{font-size:13px;font-weight:600;color:var(--acc)}
+.trk{position:relative;background:var(--track);border-radius:10px;overflow:hidden}
+.fil{position:absolute;left:0;bottom:0;background:var(--acc);border-radius:10px}
+.sl.h{justify-content:center}
+.sl.h .trk{height:16px}
+.sl.h .fil{top:0}
+.sl.v{align-items:center}
+.sl.v .top{flex-direction:column;align-items:center;order:2;gap:2px}
+.sl.v .trk{width:16px;flex:1;order:1}
+.sl.v .fil{right:0}
+.sl.mu .fil{background:var(--mute)}
+.sl.mu .val{color:var(--mute)}
+.sl.na{opacity:.4}
+/* in riproduzione */
+.k.now{container-type:size;padding:12px}
+.now .in{display:flex;align-items:center;gap:14px;width:100%;height:100%}
+.now .art{height:100%;aspect-ratio:1;max-width:50%;border-radius:10px;background:#2a2b30 center/cover no-repeat;flex:none;display:grid;place-items:center;color:var(--mute)}
+.now .art.has .g{display:none}
+.now .meta{min-width:0;display:flex;flex-direction:column;gap:4px}
+.now .ti{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now .ar{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now .stt{font-size:11px;color:var(--acc);letter-spacing:.06em}
+@container (max-aspect-ratio: 5/4){.now .in{justify-content:center}.now .art{max-width:100%}.now .meta{display:none}}
 #lost{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#2a1f10;color:var(--acc);border:1px solid #4a3515;padding:6px 12px;border-radius:999px;font-size:12px;display:none}
 </style>
 </head>
@@ -130,64 +94,104 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 <section id="deck" class="screen">
   <div class="bar mono">
     <div><span id="dot" class="dot"></span><span id="pcname">PC</span></div>
-    <div id="deskinfo"></div>
-    <div><span id="pgname"></span><div id="pages"></div><button id="editBtn">Modifica</button></div>
+    <div id="pg"></div>
+    <div><span id="tms"></span><span id="deskinfo"></span></div>
   </div>
   <div id="grid"></div>
   <div id="lost" class="mono">Riconnessione…</div>
 </section>
 
 <script>
+// Protocollo: vedi windows/Plancia/BleServer.cs e TrayApp.cs
 const U = n => `7a1e000${n}-5c3b-4c1e-9f1a-2b7d9c3e4f10`;
 const SVC = U(0), CMD = U(1), STATE = U(2), LAYOUT = U(3), INFO = U(4), ART = U(5);
-
-const ICON = {
-  deskNext: 'arrow_forward', deskPrev: 'arrow_back', 'media.prev': 'skip_previous', 'media.next': 'skip_next',
-  'vol.up': 'volume_up', 'vol.down': 'volume_down', 'vol.mute': 'volume_off',
-  'teams.video': 'videocam', 'teams.hand': 'front_hand', 'teams.leave': 'call_end', 'teams.blur': 'blur_on',
-  'audio.output': 'speaker', launch: 'open_in_new', hotkey: 'keyboard', macro: 'playlist_play',
-  'window.focus': 'select_window', 'window.toDesk': 'move_group', page: 'folder', 'page.back': 'arrow_back'
+const CHUNK = 480; // come BleServer.Chunk
+const HOLD_MS = 450;
+const GLYPH = {
+  'media.prev': '|◀︎', 'media.next': '▶︎|', 'media.now': '♪',
+  'vol.mute': 'MUTO', 'vol.down': '−', 'vol.up': '+', deskNext: '→', deskPrev: '←',
+  'mic.mute': 'MIC', 'audio.output': 'OUT', 'teams.mute': 'MIC', 'teams.video': 'CAM',
+  'teams.hand': 'MANO', 'teams.blur': 'BLUR', 'teams.leave': 'ESCI',
+  launch: 'APRI', hotkey: 'KEY', macro: 'MACRO', 'window.focus': 'APP', 'window.toDesk': '⇥',
+  page: '▸', 'page.back': '↩'
 };
-const REACT = { like: 'thumb_up', love: 'favorite', applause: 'celebration', wow: 'mood', laugh: 'sentiment_very_satisfied' };
-const MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/><path d="M8.5 21h7"/><path class="slash" d="M4 4l16 16"/></svg>';
-const MIC_LABEL = ['Teams', 'Microfono attivo', 'Muto', 'Premi per associare'];
-const PP = '<svg viewBox="0 0 24 24" fill="currentColor"><path class="i-play" d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2z"/><g class="i-pause"><rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/></g></svg>';
-const PP_LABEL = ['Nessun media', 'In riproduzione', 'In pausa'];
-const EQ = '<div class="eq"><i></i><i></i><i></i></div>';
-
+const REACT = { like: '👍', love: '❤️', applause: '👏', wow: '😮', laugh: '😂' };
 const $ = id => document.getElementById(id);
 const dec = new TextDecoder(), enc = new TextEncoder();
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-let device, cmdChar, layoutChar, infoChar, artChar, layout = null, wake, retry = 0;
-let state = { d: 0, c: 0, v: -1, t: 0, p: 0, a: 255, m: 0, f: 0, iv: -1, apps: [] };
-let info = {}, artVer = -1, artUrl = null, appOrd = new Map();
-let pg = 0, hist = [], editing = false, drag = null, lock = { key: null, until: 0 }, ppLocalAt = 0;
 
-// Operazioni GATT serializzate
-let q = Promise.resolve();
-const gatt = fn => (q = q.then(fn, fn));
-function write(obj) {
-  if (!cmdChar) return Promise.resolve();
-  const data = enc.encode(JSON.stringify(obj));
-  return gatt(() => (cmdChar.writeValueWithoutResponse ? cmdChar.writeValueWithoutResponse(data) : cmdChar.writeValue(data)).catch(() => {}));
+let device, ch = {}, layout = null, info = {}, st = null, artVer = -1, artUrl = null;
+let page = 0, stack = [], views = [], wake, retry = 0, connecting = false;
+
+// ---- Coda GATT: una operazione alla volta, i comandi passano davanti alle letture lunghe ----
+const hi = [], lo = [];
+let busy = false;
+function op(fn, prio) {
+  return new Promise((res, rej) => { (prio ? hi : lo).push({ fn, res, rej }); pump(); });
 }
-// Invia solo l'ultimo valore per chiave (slider)
-const pend = new Map(), busy = new Set();
-async function sendLatest(key, obj) {
-  pend.set(key, obj);
-  if (busy.has(key)) return;
-  busy.add(key);
-  while (pend.has(key)) { const o = pend.get(key); pend.delete(key); await write(o); await sleep(50); }
-  busy.delete(key);
+async function pump() {
+  if (busy) return;
+  busy = true;
+  while (hi.length || lo.length) {
+    const t = (hi.length ? hi : lo).shift();
+    try { t.res(await t.fn()); } catch (e) { t.rej(e); }
+  }
+  busy = false;
+}
+const pend = {};
+function resetQueue() {
+  for (const t of hi.splice(0).concat(lo.splice(0))) t.rej(new Error('disconnesso'));
+  for (const k in pend) delete pend[k];
 }
 
+function write(obj, withResponse) {
+  const data = enc.encode(JSON.stringify(obj)), c = ch.cmd;
+  if (withResponse) return c.writeValueWithResponse ? c.writeValueWithResponse(data) : c.writeValue(data);
+  return c.writeValueWithoutResponse ? c.writeValueWithoutResponse(data) : c.writeValue(data);
+}
+function send(obj) { if (ch.cmd) op(() => write(obj), true).catch(() => {}); }
+// Per gli slider: se un invio è già in coda si aggiorna solo il valore da mandare.
+function sendLatest(key, obj) {
+  if (!ch.cmd) return;
+  const queued = key in pend;
+  pend[key] = obj;
+  if (queued) return;
+  op(() => { const o = pend[key]; delete pend[key]; return write(o); }, true).catch(() => {});
+}
+
+// Valori lunghi a blocchi: {"o":[id,offset]} su COMMAND, poi lettura.
+async function readBig(c, id) {
+  const parts = [];
+  let off = 0;
+  for (let n = 0; n < 400; n++) {
+    const b = await op(async () => {
+      await write({ o: [id, off] }, true);
+      const dv = await c.readValue();
+      return new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength).slice();
+    });
+    parts.push(b);
+    off += b.length;
+    if (b.length < CHUNK) break;
+  }
+  const all = new Uint8Array(off);
+  let p = 0;
+  for (const b of parts) { all.set(b, p); p += b.length; }
+  return all;
+}
+const json = bytes => JSON.parse(dec.decode(bytes));
+
+// [0] desktop  [1] n. desktop  [2] ver. layout  [3] Teams  [4] media  [5] volume  [6] muto  [7] flag  [8] ver. info  [9..] slider app
+function parseState(dv) {
+  const b = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+  return {
+    d: b[0], c: b[1], v: b[2], tm: b[3], m: b[4], vol: b[5] === 255 ? -1 : b[5], mu: b[6] === 1, f: b[7], iv: b[8],
+    apps: Array.from(b.slice(9), x => x === 255 ? -1 : x)
+  };
+}
+const inMeeting = () => !!(st && st.f & 16);
+
+// ---- Schermate ----
 function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id)); }
 function err(m) { $('err').textContent = m || ''; }
-function parseState(dv) {
-  const b = i => i < dv.byteLength ? dv.getUint8(i) : 0, apps = [];
-  for (let i = 9; i < dv.byteLength; i++) apps.push(dv.getUint8(i));
-  return { d: b(0), c: b(1), v: b(2), t: b(3), p: b(4), a: dv.byteLength > 5 ? b(5) : 255, m: b(6), f: b(7), iv: b(8), apps };
-}
 
 if (!navigator.bluetooth) {
   $('go').disabled = true;
@@ -204,367 +208,91 @@ $('go').addEventListener('click', async () => {
   } catch (e) { if (e.name !== 'NotFoundError') err(e.message); }
 });
 
+// ---- Connessione ----
 async function connect(d) {
-  device = d;
-  device.removeEventListener('gattserverdisconnected', onLost);
-  device.addEventListener('gattserverdisconnected', onLost);
-  const server = await device.gatt.connect();
-  const svc = await server.getPrimaryService(SVC);
-  cmdChar = await svc.getCharacteristic(CMD);
-  layoutChar = await svc.getCharacteristic(LAYOUT);
-  try { infoChar = await svc.getCharacteristic(INFO); artChar = await svc.getCharacteristic(ART); } catch { infoChar = artChar = null; }
-  const st = await svc.getCharacteristic(STATE);
-  await loadLayout();
-  st.removeEventListener('characteristicvaluechanged', onState);
-  st.addEventListener('characteristicvaluechanged', onState);
-  await st.startNotifications();
-  const first = parseState(await st.readValue());
-  state.v = first.v;
-  await loadInfo();
-  state.iv = first.iv;
-  applyState(first);
-  retry = 0;
-  $('lost').style.display = 'none';
-  $('dot').classList.remove('off');
-  show('deck');
-  keepAwake();
+  if (connecting) return;
+  connecting = true;
+  try {
+    device = d;
+    device.removeEventListener('gattserverdisconnected', onLost);
+    device.addEventListener('gattserverdisconnected', onLost);
+    resetQueue();
+    const server = await device.gatt.connect();
+    const svc = await server.getPrimaryService(SVC);
+    const [cmd, state, lay, inf, art] = await Promise.all([CMD, STATE, LAYOUT, INFO, ART].map(u => svc.getCharacteristic(u)));
+    ch = { cmd, state, layout: lay, info: inf, art };
+    await loadLayout();
+    state.removeEventListener('characteristicvaluechanged', onState);
+    state.addEventListener('characteristicvaluechanged', onState);
+    await op(() => state.startNotifications());
+    st = null;
+    onStateBytes(await op(() => state.readValue()));
+    retry = 0;
+    $('lost').style.display = 'none';
+    $('dot').classList.remove('off');
+    show('deck');
+    keepAwake();
+  } finally { connecting = false; }
 }
 
 async function loadLayout() {
-  layout = JSON.parse(dec.decode(await layoutChar.readValue()));
-  if (!layout.pages) layout.pages = [{ n: 'Principale', keys: layout.keys || [] }];
-  $('pcname').textContent = (layout.name || 'PC').toUpperCase();
-  appOrd = new Map();
-  let o = 0;
-  layout.pages.forEach((p, pi) => p.keys.forEach((k, ki) => { if (k.a === 'app.slider' && o < 11) appOrd.set(pi + ':' + ki, o++); }));
-  if (pg >= layout.pages.length) { pg = 0; hist = []; }
+  const l = json(await readBig(ch.layout, 3));
+  if (!Array.isArray(l.pages)) throw new Error('Versione di Plancia sul PC non compatibile: aggiornala.');
+  // Stesso ordine di AppConfig.AppSliders(): al massimo 11 slider di app.
+  let s = 0;
+  for (const p of l.pages) for (const k of p.keys) if (k.a === 'app.slider') k._s = s < 11 ? s++ : -1;
+  layout = l;
+  if (page >= l.pages.length) { page = 0; stack = []; }
+  stack = stack.filter(p => p < l.pages.length);
+  $('pcname').textContent = (l.name || 'PC').toUpperCase();
+  loadIcons();
   render();
 }
 
 async function loadInfo() {
-  if (!infoChar) return;
+  info = json(await readBig(ch.info, 4));
+  const needArt = layout?.pages.some(p => p.keys.some(k => k.a === 'media.now'));
+  if (needArt && info.art !== artVer) {
+    const bytes = await readBig(ch.art, 5);
+    artVer = info.art;
+    if (artUrl) URL.revokeObjectURL(artUrl);
+    artUrl = bytes.length ? URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' })) : null;
+  }
+  update();
+}
+
+// Ricarica layout/info quando cambia la loro versione nello stato. Una sola sincronizzazione alla volta.
+const want = { layout: false, info: false };
+let syncing = false;
+async function sync() {
+  if (syncing) return;
+  syncing = true;
   try {
-    info = JSON.parse(dec.decode(await infoChar.readValue()));
-    if (info.art !== artVer && artChar) {
-      artVer = info.art;
-      const dv = await artChar.readValue();
-      if (artUrl) URL.revokeObjectURL(artUrl);
-      artUrl = dv.byteLength ? URL.createObjectURL(new Blob([dv.buffer.slice(dv.byteOffset, dv.byteOffset + dv.byteLength)], { type: 'image/jpeg' })) : null;
+    while (want.layout || want.info) {
+      if (want.layout) { want.layout = false; await loadLayout(); want.info = true; }
+      if (want.info) { want.info = false; await loadInfo(); }
     }
-  } catch {}
-  paint();
+  } catch { } finally { syncing = false; }
 }
 
-function onState(e) { applyState(parseState(e.target.value)); }
-
-async function applyState(s) {
-  const reload = layout && s.v !== state.v, reinfo = s.iv !== state.iv;
-  if (Date.now() < lock.until) {
-    if (lock.key === 'vol') s.a = state.a;
-    else if (lock.key != null) s.apps[lock.key] = state.apps[lock.key];
-  }
-  state = s;
-  if (reload && !drag) await gatt(loadLayout);
-  if (reinfo) gatt(loadInfo);
-  paint();
+function onState(e) { onStateBytes(e.target.value); }
+function onStateBytes(dv) {
+  const s = parseState(dv), prev = st;
+  st = s;
+  if (prev && s.v !== prev.v) want.layout = true;
+  if (!prev || s.iv !== prev.iv) want.info = true;
+  if (want.layout || want.info) sync();
+  update();
 }
 
-const keysOf = p => layout.pages[p]?.keys || [];
-
-function cells() {
-  const cols = layout.cols, rows = layout.rows, covered = new Set(), out = [];
-  keysOf(pg).slice(0, cols * rows).forEach((k, i) => {
-    if (covered.has(i)) return;
-    const c = i % cols, r = Math.floor(i / cols);
-    let w = 1, h = 1;
-    if (k.a === 'vol.slider' || k.a === 'app.slider' || k.a === 'media.now') {
-      w = Math.max(1, Math.min(k.w || 1, cols - c)); h = Math.max(1, Math.min(k.h || 1, rows - r));
-    }
-    for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) if (dx || dy) covered.add(i + dy * cols + dx);
-    out.push({ i, k, c, r, w, h });
-  });
-  return out;
-}
-
-function msEl(name) { const s = document.createElement('span'); s.className = 'ms'; s.textContent = name; return s; }
-function isLight(hex) {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return false;
-  const n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 160;
-}
-
-function render() {
-  if (!layout) return;
-  const g = $('grid'), portrait = innerHeight > innerWidth;
-  const cols = portrait ? layout.rows : layout.cols, rows = portrait ? layout.cols : layout.rows;
-  g.style.gridTemplateColumns = `repeat(${cols},minmax(0,1fr))`;
-  g.style.gridTemplateRows = `repeat(${rows},minmax(0,1fr))`;
-  g.innerHTML = '';
-  for (const { i, k, c, r, w, h } of cells()) {
-    const el = document.createElement('div');
-    const [gc, gr, gw, gh] = portrait ? [r, c, h, w] : [c, r, w, h];
-    el.style.gridColumn = `${gc + 1} / span ${gw}`;
-    el.style.gridRow = `${gr + 1} / span ${gh}`;
-    el.dataset.i = i;
-    el.dataset.a = k.a;
-    el.className = 'k';
-    el._k = k;
-    if (k.c) { el.style.background = k.c; el.style.color = isLight(k.c) ? '#1a1206' : '#fff'; el.classList.add('custom'); }
-
-    if (k.a === 'none') el.classList.add('empty');
-    else if (k.a === 'vol.slider' || k.a === 'app.slider') {
-      el.classList.add('slider');
-      el.dataset.o = gw > gh ? 'h' : 'v';
-      if (k.a === 'app.slider') el.dataset.ord = appOrd.get(pg + ':' + i) ?? -1;
-      el.innerHTML = '<div class="fill"></div><div class="sv"><div class="g"></div><div class="l"></div></div>';
-      el.querySelector('.l').textContent = k.l || (k.a === 'app.slider' ? (k.app || 'App') : 'Volume');
-    } else if (k.a === 'media.now') {
-      el.classList.add('now');
-      if (gw < 2 || gh > gw) el.classList.add('col');
-      el.innerHTML = '<div class="art"></div><div class="meta"><div class="tt"></div><div class="ar"></div></div>' + EQ;
-      el.querySelector('.art').appendChild(msEl('music_note'));
-    } else {
-      el.innerHTML = '<div class="g"></div><div class="l"></div>';
-      const gl = el.firstChild;
-      el.lastChild.textContent = k.l || '';
-      if (k.a === 'teams.mute' || k.a === 'mic.mute') { el.classList.add('mic'); gl.innerHTML = MIC; }
-      else if (k.a === 'media.playpause' && !k.i) { el.classList.add('pp'); gl.innerHTML = PP; el.insertAdjacentHTML('beforeend', EQ); }
-      else if (k.a === 'desk' && !k.i) { el.classList.add('desk'); el.dataset.n = k.n; gl.textContent = k.n; }
-      else {
-        if (k.a === 'desk') { el.classList.add('desk'); el.dataset.n = k.n; }
-        const icon = k.i || (k.a === 'teams.react' ? REACT[k.r || 'like'] : ICON[k.a]);
-        if (icon) gl.appendChild(msEl(icon)); else gl.textContent = '•';
-        if (k.a === 'teams.leave' && !k.c) el.classList.add('danger');
-        if (k.a === 'vol.mute') el.classList.add('vmute');
-      }
-    }
-    if (k.lg && k.a !== 'none') el.insertAdjacentHTML('beforeend', '<i class="ldot"></i>');
-    el.addEventListener('pointerdown', e => onDown(e, el, i, k));
-    g.appendChild(el);
-  }
-  renderPages();
-  paint();
-}
-addEventListener('resize', () => render());
-
-function renderPages() {
-  const n = layout.pages.length, box = $('pages');
-  box.innerHTML = '';
-  $('pgname').textContent = n > 1 ? (layout.pages[pg].n || '').toUpperCase() : '';
-  if (n < 2) return;
-  for (let i = 0; i < n; i++) { const d = document.createElement('i'); d.className = 'pd' + (i === pg ? ' on' : ''); box.appendChild(d); }
-}
-
-function bump(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
-function setLabel(el, text) { const l = el.querySelector('.l'); if (l) l.textContent = text; }
-
-function paint() {
-  if (!layout) return;
-  const s = state, inMeet = !!(s.f & 16);
-  const deskName = n => info.ds?.[n - 1] || '';
-  $('deskinfo').textContent = s.d ? `DESKTOP ${s.d}/${s.c}` + (deskName(s.d) ? ' · ' + deskName(s.d).toUpperCase() : '') : '';
-
-  document.querySelectorAll('#grid .k').forEach(el => {
-    const k = el._k; if (!k) return;
-    switch (k.a) {
-      case 'desk':
-        el.classList.toggle('on', k.n === s.d);
-        if (!k.l) setLabel(el, deskName(k.n));
-        break;
-      case 'vol.mute': el.classList.toggle('red', !!s.m); break;
-      case 'teams.mute': case 'mic.mute': {
-        const t = String(k.a === 'teams.mute' ? s.t : (s.f & 1 ? 2 : 1));
-        if (el.dataset.t !== t) { const first = el.dataset.t === undefined; el.dataset.t = t; if (!first) bump(el); }
-        if (!k.l || k.a === 'teams.mute') setLabel(el, k.a === 'teams.mute' ? MIC_LABEL[s.t] : (s.f & 1 ? 'Microfono spento' : k.l || 'Microfono'));
-        break;
-      }
-      case 'teams.video': {
-        const on = !!(s.f & 2);
-        el.classList.toggle('on', on); el.classList.toggle('dim', !inMeet);
-        if (!k.i) el.querySelector('.ms').textContent = on ? 'videocam' : 'videocam_off';
-        break;
-      }
-      case 'teams.hand': el.classList.toggle('on', !!(s.f & 4)); el.classList.toggle('dim', !inMeet); break;
-      case 'teams.blur': {
-        const on = !!(s.f & 8);
-        el.classList.toggle('on', on); el.classList.toggle('dim', !inMeet);
-        if (!k.i) el.querySelector('.ms').textContent = on ? 'blur_on' : 'blur_off';
-        break;
-      }
-      case 'teams.leave': case 'teams.react': el.classList.toggle('dim', !inMeet); break;
-      case 'audio.output': {
-        const name = info.o || '';
-        if (!k.l) setLabel(el, name.replace(/\s*\(.*\)\s*$/, '') || 'Uscita');
-        if (!k.i) el.querySelector('.ms').textContent = /cuff|head|auric|buds|airpods/i.test(name) ? 'headphones' : 'speaker';
-        break;
-      }
-      case 'media.playpause': if (!ppLocalAt && el.classList.contains('pp')) { el.dataset.p = s.p; setLabel(el, k.l && s.p === 0 ? k.l : PP_LABEL[s.p]); } break;
-      case 'media.now': {
-        el.dataset.p = s.p;
-        const art = el.querySelector('.art');
-        art.style.backgroundImage = artUrl && s.p ? `url(${artUrl})` : '';
-        art.classList.toggle('has', !!(artUrl && s.p));
-        el.querySelector('.tt').textContent = s.p ? (info.t || 'Senza titolo') : 'Nessun media';
-        el.querySelector('.ar').textContent = s.p ? (info.ar || '') : '';
-        break;
-      }
-    }
-  });
-  paintSliders();
-}
-
-function sliderValue(el) {
-  return el._k.a === 'vol.slider' ? state.a : (state.apps[+el.dataset.ord] ?? 255);
-}
-
-function paintSliders() {
-  document.querySelectorAll('.k.slider').forEach(el => {
-    const raw = sliderValue(el), known = raw <= 100, v = known ? raw : 0, isVol = el._k.a === 'vol.slider';
-    const f = el.firstChild;
-    if (el.dataset.o === 'h') { f.style.width = v + '%'; f.style.height = ''; }
-    else { f.style.height = v + '%'; f.style.width = ''; }
-    el.classList.toggle('muted', isVol && !!state.m);
-    el.classList.toggle('off', !known);
-    el.querySelector('.g').textContent = known ? v + '%' : (isVol ? '—' : 'non attiva');
-  });
-}
-
-function goFull() {
-  if (document.fullscreenElement || matchMedia('(display-mode: fullscreen)').matches) return;
-  document.documentElement.requestFullscreen?.().then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
-}
-
-// ---- Pagine ----
-function goPage(n, push, dir) {
-  if (!layout) return;
-  n = Math.max(0, Math.min(layout.pages.length - 1, n));
-  if (n === pg) return;
-  if (push) hist.push(pg);
-  dir = dir ?? (n > pg ? 1 : -1);
-  pg = n;
-  render();
-  $('grid').animate([{ transform: `translateX(${dir * 40}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 220, easing: 'ease-out' });
-  navigator.vibrate?.(8);
-}
-function back() { goPage(hist.length ? hist.pop() : 0, false, -1); }
-
-function beginSwipe(x0, y0, pointerId) {
-  if (!layout || layout.pages.length < 2) return;
-  const g = $('grid');
-  const mv = ev => { g.style.transform = `translateX(${(ev.clientX - x0) * 0.35}px)`; };
-  const up = ev => {
-    removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up);
-    g.style.transform = '';
-    const dx = ev.clientX - x0, dy = ev.clientY - y0;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.3) goPage(pg + (dx < 0 ? 1 : -1), false, dx < 0 ? 1 : -1);
-  };
-  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
-}
-$('grid').addEventListener('pointerdown', e => { if (e.target === $('grid') && !editing) beginSwipe(e.clientX, e.clientY); });
-
-// ---- Pressione: breve al rilascio, lunga dopo 480 ms, trascinamento = swipe pagina ----
-function onDown(e, el, i, k) {
-  if (editing) { if (k.a !== 'none') startDrag(e, el, i); return; }
-  if (k.a === 'none') return beginSwipe(e.clientX, e.clientY);
-  goFull();
-  if (k.a === 'vol.slider' || k.a === 'app.slider') return slide(e, el, k);
-  const x0 = e.clientX, y0 = e.clientY;
-  let fired = false;
-  el.classList.add('press');
-  const timer = k.lg ? setTimeout(() => { fired = true; el.classList.remove('press'); navigator.vibrate?.([10, 40, 14]); bump(el); fire(i, k, true, el); }, 480) : 0;
-  const cleanup = () => { clearTimeout(timer); el.classList.remove('press'); removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', cancel); };
-  const mv = ev => { if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 14) { cleanup(); beginSwipe(x0, y0); } };
-  const up = () => { cleanup(); if (!fired) fire(i, k, false, el); };
-  const cancel = () => cleanup();
-  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', cancel);
-}
-
-function fire(i, k, isLong, el) {
-  const act = isLong ? k.lg : k;
-  if (!act) return;
-  if (act.a === 'page') return goPage(act.p ?? 0, true);
-  if (act.a === 'page.back') return back();
-  if (!isLong) navigator.vibrate?.(12);
-  if (!isLong && k.a === 'media.playpause' && state.p && el.classList.contains('pp')) {
-    ppLocalAt = Date.now();
-    el.dataset.p = state.p === 1 ? 2 : 1;
-    setLabel(el, PP_LABEL[+el.dataset.p]);
-    setTimeout(() => { ppLocalAt = 0; paint(); }, 700);
-  }
-  write({ k: [pg, i, isLong ? 1 : 0] });
-}
-
-// ---- Slider ----
-function slide(e, el, k) {
-  e.preventDefault();
-  el.setPointerCapture(e.pointerId);
-  const horiz = el.dataset.o === 'h', isVol = k.a === 'vol.slider', ord = +el.dataset.ord;
-  if (!isVol && (ord < 0 || (state.apps[ord] ?? 255) > 100)) return;
-  let last = sliderValue(el);
-  const move = ev => {
-    const r = el.getBoundingClientRect();
-    const f = horiz ? (ev.clientX - r.left) / r.width : 1 - (ev.clientY - r.top) / r.height;
-    const v = Math.round(Math.max(0, Math.min(1, f)) * 100);
-    if (Math.floor(v / 10) !== Math.floor(last / 10)) navigator.vibrate?.(4);
-    last = v;
-    if (isVol) { state.a = v; if (v > 0) state.m = 0; lock = { key: 'vol', until: Date.now() + 900 }; sendLatest('vol', { v }); }
-    else { state.apps[ord] = v; lock = { key: ord, until: Date.now() + 900 }; sendLatest('app' + ord, { av: [ord, v] }); }
-    paintSliders();
-  };
-  move(e);
-  el.onpointermove = move;
-  el.onpointerup = el.onpointercancel = () => { el.onpointermove = null; lock.until = Date.now() + 900; };
-}
-
-// ---- Modalità modifica ----
-$('editBtn').addEventListener('click', () => {
-  editing = !editing;
-  $('editBtn').classList.toggle('on', editing);
-  $('editBtn').textContent = editing ? 'Fine' : 'Modifica';
-  $('grid').classList.toggle('editing', editing);
-});
-
-function startDrag(e, el, i) {
-  e.preventDefault();
-  drag = { el, i, x0: e.clientX, y0: e.clientY, over: null };
-  el.classList.add('dragging');
-  navigator.vibrate?.(10);
-  addEventListener('pointermove', dragMove);
-  addEventListener('pointerup', dragEnd);
-  addEventListener('pointercancel', dragEnd);
-}
-
-function dragMove(e) {
-  const d = drag; if (!d) return;
-  d.el.style.transform = `translate(${e.clientX - d.x0}px,${e.clientY - d.y0}px) scale(1.04)`;
-  const t = document.elementFromPoint(e.clientX, e.clientY)?.closest('.k');
-  const over = t && t !== d.el ? t : null;
-  if (over !== d.over) { d.over?.classList.remove('drop'); over?.classList.add('drop'); d.over = over; }
-}
-
-function dragEnd() {
-  removeEventListener('pointermove', dragMove);
-  removeEventListener('pointerup', dragEnd);
-  removeEventListener('pointercancel', dragEnd);
-  const d = drag; drag = null;
-  if (!d) return;
-  d.el.classList.remove('dragging');
-  d.el.style.transform = '';
-  if (!d.over) return;
-  d.over.classList.remove('drop');
-  const a = d.i, b = +d.over.dataset.i, ks = keysOf(pg);
-  [ks[a], ks[b]] = [ks[b], ks[a]];
-  render();
-  navigator.vibrate?.(15);
-  write({ s: [pg, a, b] });
-}
-
-// ---- Connessione ----
-async function onLost() {
+function onLost() {
+  resetQueue();
+  if (!device) return;
   $('dot').classList.add('off');
   $('lost').style.display = 'block';
-  if (retry > 8) { show('connect'); err('Connessione persa. Tocca Collega.'); return; }
+  if (retry > 8) { show('connect'); err('Connessione persa. Tocca Collega.'); retry = 0; return; }
   const wait = Math.min(8000, 500 * 2 ** retry++);
-  setTimeout(() => connect(device).catch(onLost), wait);
+  setTimeout(() => { if (!device.gatt.connected) connect(device).catch(onLost); }, wait);
 }
 
 async function keepAwake() {
@@ -572,6 +300,247 @@ async function keepAwake() {
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && device?.gatt.connected) keepAwake(); });
 
+function goFull() {
+  if (document.fullscreenElement || matchMedia('(display-mode: fullscreen)').matches) return;
+  document.documentElement.requestFullscreen?.().then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
+}
+
+// Icone Material Symbols: si scaricano solo quelle usate nel layout.
+function loadIcons() {
+  const names = new Set();
+  for (const p of layout.pages) for (const k of p.keys) if (k.i && /^[a-z0-9_]+$/.test(k.i)) names.add(k.i);
+  const href = names.size
+    ? 'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,500,0,0&icon_names=' + [...names].sort().join(',') + '&display=block'
+    : '';
+  if ($('icofont').getAttribute('href') !== href) $('icofont').setAttribute('href', href);
+}
+
+// ---- Pagine ----
+function goPage(p) {
+  if (!layout || p === page || p < 0 || p >= layout.pages.length) return;
+  stack.push(page);
+  page = p;
+  render();
+}
+function goBack() {
+  page = stack.length ? stack.pop() : 0;
+  render();
+}
+$('pg').addEventListener('click', () => { if (stack.length) goBack(); });
+
+// ---- Griglia ----
+function render() {
+  if (!layout) return;
+  const P = layout.pages[page], C = layout.cols, R = layout.rows, n = C * R;
+  const portrait = innerHeight > innerWidth, g = $('grid');
+  // In verticale la griglia viene trasposta: colonne e righe si scambiano.
+  g.style.gridTemplateColumns = `repeat(${portrait ? R : C},1fr)`;
+  g.style.gridTemplateRows = `repeat(${portrait ? C : R},1fr)`;
+  g.innerHTML = '';
+  views = [];
+  const covered = new Set();
+  for (let i = 0; i < n; i++) {
+    if (covered.has(i)) continue;
+    const k = P.keys[i] || { a: 'none' }, w = k.w || 1, h = k.h || 1, c = i % C, r = Math.floor(i / C);
+    for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) if (dx || dy) covered.add(i + dy * C + dx);
+    const v = makeKey(k, i);
+    v.el.style.gridColumn = portrait ? `${r + 1} / span ${h}` : `${c + 1} / span ${w}`;
+    v.el.style.gridRow = portrait ? `${c + 1} / span ${w}` : `${r + 1} / span ${h}`;
+    g.appendChild(v.el);
+    views.push(v);
+  }
+  const pg = $('pg');
+  pg.textContent = layout.pages.length > 1 ? (P.n || '').toUpperCase() : '';
+  pg.classList.toggle('back', stack.length > 0);
+  update();
+}
+let resizeT;
+addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(render, 120); });
+
+function update() {
+  if (!layout || !st) return;
+  for (const v of views) v.upd();
+  const names = info.ds || [];
+  const dk = layout.pages.flatMap(p => p.keys).find(k => k.a === 'desk' && k.n === st.d && k.l);
+  const dn = dk ? dk.l : names[st.d - 1];
+  $('deskinfo').textContent = `DESKTOP ${st.d}/${st.c}` + (dn ? ' · ' + dn.toUpperCase() : '');
+  const t = $('tms');
+  t.textContent = inMeeting() ? (st.tm === 2 ? 'TEAMS MUTO' : st.tm === 1 ? 'TEAMS MIC ON' : 'TEAMS') : '';
+  t.classList.toggle('bad', st.tm === 2);
+}
+
+function isLight(hex) {
+  let m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return false;
+  let h = m[1];
+  if (h.length === 3) h = h.replace(/./g, x => x + x);
+  const n = parseInt(h, 16);
+  return 0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255) > 160;
+}
+
+function makeKey(k, i) {
+  const el = document.createElement('div');
+  el.className = 'k';
+  if (k.a === 'none') { el.classList.add('empty'); return { el, upd() {} }; }
+  if (k.c) {
+    el.classList.add('col');
+    el.style.setProperty('--kc', k.c);
+    if (isLight(k.c)) el.classList.add('lt');
+  }
+  if (k.a === 'vol.slider' || k.a === 'app.slider') return makeSlider(k, el);
+  if (k.a === 'media.now') return makeNow(k, i, el);
+
+  if (k.lg) el.classList.add('lg');
+  if (k.a === 'desk') el.classList.add('desk');
+  const glyph = document.createElement(k.i ? 'span' : 'div');
+  if (k.i) { glyph.className = 'ico'; glyph.textContent = k.i; }
+  else {
+    const t = k.a === 'desk' ? String(k.n || '') : k.a === 'teams.react' ? (REACT[k.r] || REACT.like) : k.a === 'media.playpause' ? '▶︎' : (GLYPH[k.a] || '•');
+    glyph.className = 'g' + (t.length > 3 ? ' sm' : '');
+    glyph.textContent = t;
+  }
+  const label = document.createElement('div');
+  label.className = 'l';
+  el.append(glyph, label);
+  bindPress(el, k, i);
+
+  const fixed = k.l || (k.a === 'page' ? layout.pages[k.p]?.n : k.a === 'hotkey' ? '' : k.a === 'window.focus' ? k.app : '') || '';
+  const set = (cls, on) => el.classList.toggle(cls, !!on);
+  return {
+    el, upd() {
+      const f = st.f, meet = inMeeting();
+      let l = fixed;
+      switch (k.a) {
+        case 'desk':
+          set('on', st.d === k.n);
+          if (!l) l = (info.ds || [])[k.n - 1] || '';
+          break;
+        case 'media.playpause':
+          if (!k.i) glyph.textContent = st.m === 1 ? '❚❚' : '▶︎';
+          break;
+        case 'vol.mute': set('on', st.mu); break;
+        case 'mic.mute':
+          set('bad', f & 1);
+          if (!l) l = f & 1 ? 'Muto' : 'Microfono';
+          break;
+        case 'audio.output': if (!l) l = info.o || ''; break;
+        case 'teams.mute':
+          set('dim', st.tm === 0);
+          set('on', st.tm === 1);
+          set('bad', st.tm === 2);
+          if (!l || st.tm === 3) l = ['Teams non attivo', 'Microfono attivo', 'Muto', 'Tocca per associare'][st.tm] || 'Teams';
+          break;
+        case 'teams.video': set('dim', !meet); set('on', meet && f & 2); break;
+        case 'teams.hand': set('dim', !meet); set('on', meet && f & 4); break;
+        case 'teams.blur': set('dim', !meet); set('on', meet && f & 8); break;
+        case 'teams.leave': case 'teams.react': set('dim', !meet); break;
+      }
+      if (label.textContent !== l) label.textContent = l;
+    }
+  };
+}
+
+// Tocco breve subito; con pressione lunga configurata si decide al rilascio.
+function bindPress(el, k, i) {
+  let timer = 0, done = true;
+  el.addEventListener('pointerdown', () => {
+    goFull();
+    el.classList.add('press');
+    navigator.vibrate?.(12);
+    if (!k.lg) { fire(k, i, false); setTimeout(() => el.classList.remove('press'), 120); return; }
+    done = false;
+    timer = setTimeout(() => {
+      done = true;
+      el.classList.remove('press');
+      navigator.vibrate?.([20, 40, 20]);
+      fire(k.lg, i, true);
+    }, HOLD_MS);
+  });
+  const end = cancel => () => {
+    if (!k.lg || done) return;
+    clearTimeout(timer);
+    done = true;
+    el.classList.remove('press');
+    if (!cancel) fire(k, i, false);
+  };
+  el.addEventListener('pointerup', end(false));
+  el.addEventListener('pointercancel', end(true));
+  el.addEventListener('pointerleave', end(true));
+}
+
+function fire(def, i, isLong) {
+  if (def.a === 'page') return goPage(def.p || 0);
+  if (def.a === 'page.back') return goBack();
+  send({ k: isLong ? [page, i, 1] : [page, i] });
+}
+
+function makeSlider(k, el) {
+  el.classList.add('sl');
+  el.innerHTML = '<div class="top"><span class="l"></span><span class="val mono"></span></div><div class="trk"><div class="fil"></div></div>';
+  const [top, trk] = el.children, lab = top.firstChild, val = top.lastChild, fil = trk.firstChild;
+  const isVol = k.a === 'vol.slider';
+  lab.textContent = k.l || (isVol ? 'Volume' : k.app || 'App');
+  let local = -1, holdUntil = 0, dragging = false;
+  const remote = () => isVol ? st.vol : k._s >= 0 ? (st.apps[k._s] ?? -1) : -1;
+  const horiz = () => el.clientWidth >= el.clientHeight * 0.9;
+  const draw = v => {
+    const h = horiz();
+    el.classList.toggle('h', h);
+    el.classList.toggle('v', !h);
+    el.classList.toggle('na', v < 0);
+    el.classList.toggle('mu', isVol && st.mu);
+    val.textContent = v < 0 ? (isVol ? '—' : 'non attiva') : v + '%';
+    const p = Math.max(0, v) + '%';
+    fil.style.width = h ? p : '';
+    fil.style.height = h ? '' : p;
+  };
+  const at = e => {
+    const r = trk.getBoundingClientRect();
+    const x = horiz() ? (e.clientX - r.left) / r.width : (r.bottom - e.clientY) / r.height;
+    return Math.round(Math.min(1, Math.max(0, x)) * 100);
+  };
+  const move = e => {
+    local = at(e);
+    draw(local);
+    sendLatest(isVol ? 'vol' : 'app' + k._s, isVol ? { v: local } : { av: [k._s, local] });
+  };
+  el.addEventListener('pointerdown', e => {
+    if (!st || remote() < 0) return;
+    goFull();
+    dragging = true;
+    el.setPointerCapture(e.pointerId);
+    navigator.vibrate?.(8);
+    move(e);
+  });
+  el.addEventListener('pointermove', e => { if (dragging) move(e); });
+  const stop = () => { if (!dragging) return; dragging = false; holdUntil = Date.now() + 1200; };
+  el.addEventListener('pointerup', stop);
+  el.addEventListener('pointercancel', stop);
+  // Durante il trascinamento (e poco dopo) si ignora il valore del PC, che arriva in ritardo.
+  return { el, upd() { draw(dragging || Date.now() < holdUntil ? local : remote()); } };
+}
+
+function makeNow(k, i, el) {
+  el.classList.add('now');
+  el.innerHTML = '<div class="in"><div class="art"><div class="g">♪</div></div><div class="meta"><div class="ti"></div><div class="ar"></div><div class="stt mono"></div></div></div>';
+  const art = el.querySelector('.art'), ti = el.querySelector('.ti'), ar = el.querySelector('.ar'), stt = el.querySelector('.stt');
+  bindPress(el, k, i);
+  let shown = null;
+  return {
+    el, upd() {
+      if (shown !== artUrl) {
+        shown = artUrl;
+        art.style.backgroundImage = artUrl ? `url(${artUrl})` : '';
+        art.classList.toggle('has', !!artUrl);
+      }
+      ti.textContent = st.m ? (info.t || 'Senza titolo') : (k.l || 'Nessun media');
+      ar.textContent = st.m ? (info.ar || '') : '';
+      stt.textContent = st.m === 1 ? '▶︎ IN RIPRODUZIONE' : st.m === 2 ? '❚❚ IN PAUSA' : '';
+    }
+  };
+}
+
+// Riconnessione automatica a un PC già autorizzato (se il browser lo consente).
 (async () => {
   if (!navigator.bluetooth?.getDevices) return;
   try {
