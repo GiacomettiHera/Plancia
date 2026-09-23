@@ -141,6 +141,23 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 .ch.in{animation:fade .3s var(--ease)}
 .me{margin:auto;font-size:13px;color:var(--muted-foreground);text-align:center}
 
+/* finestre aperte */
+.k.wn{padding:12px 12px 8px;align-items:stretch;justify-content:flex-start;gap:12px;overflow-y:auto;touch-action:pan-y;scrollbar-width:none}
+.k.wn::-webkit-scrollbar{display:none}
+.wsec{display:flex;flex-direction:column;gap:8px}
+.wsh{font-size:12px;font-weight:500;color:var(--muted-foreground);display:flex;align-items:center;gap:6px;padding:0 2px}
+.wsh.cur{color:var(--foreground)}
+.wsh.cur::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--primary)}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.wt{appearance:none;border:1px solid var(--border);background:var(--background);color:var(--foreground);border-radius:var(--radius);padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;font:inherit;transition:transform .15s var(--ease),background .15s;animation:fade .3s var(--ease) backwards}
+.dark .wt{background:var(--muted);border-color:transparent}
+.wt:active{transform:scale(.94);background:var(--accent)}
+.wt img,.wt .av{width:30px;height:30px;border-radius:7px;flex:none}
+.wt .av{display:grid;place-items:center;background:var(--muted);color:var(--muted-foreground);font-weight:600;font-size:14px}
+.dark .wt .av{background:var(--card)}
+.wtt{font-size:11px;line-height:1.25;font-weight:500;text-align:center;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.wempty{margin:auto;font-size:13px;color:var(--muted-foreground)}
+
 /* in riproduzione */
 .k.now{container-type:size;padding:12px}
 .now .in{display:flex;align-items:center;gap:14px;width:100%;height:100%}
@@ -197,7 +214,7 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 <script>
 // Protocollo: vedi windows/Plancia/BleServer.cs e TrayApp.cs
 const U = n => `7a1e000${n}-5c3b-4c1e-9f1a-2b7d9c3e4f10`;
-const SVC = U(0), CMD = U(1), STATE = U(2), LAYOUT = U(3), INFO = U(4), ART = U(5);
+const SVC = U(0), CMD = U(1), STATE = U(2), LAYOUT = U(3), INFO = U(4), ART = U(5), WINDOWS = U(6), ICON = U(7);
 const CHUNK = 480; // come BleServer.Chunk
 const HOLD_MS = 450, ARM_MS = 2500;
 const $ = id => document.getElementById(id);
@@ -223,6 +240,7 @@ const pop = el => el.animate([{ transform: 'scale(.6)', opacity: .2 }, { transfo
 const fmt = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
 let device, ch = {}, layout = null, info = {}, infoAt = 0, st = null, artVer = -1, artUrl = null;
+let wins = null, winVer = null, iconsVer = 0;
 let page = 0, stack = [], views = [], wake, retry = 0, connecting = false, autoFrom = null, firstRender = true;
 const armed = new Set();
 
@@ -326,8 +344,9 @@ async function connect(d) {
     resetQueue();
     const server = await device.gatt.connect();
     const svc = await server.getPrimaryService(SVC);
-    const [cmd, state, lay, inf, art] = await Promise.all([CMD, STATE, LAYOUT, INFO, ART].map(u => svc.getCharacteristic(u)));
-    ch = { cmd, state, layout: lay, info: inf, art };
+    const [cmd, state, lay, inf, art, win, icon] = await Promise.all([CMD, STATE, LAYOUT, INFO, ART, WINDOWS, ICON].map(u => svc.getCharacteristic(u)));
+    ch = { cmd, state, layout: lay, info: inf, art, win, icon };
+    winVer = null;
     await loadLayout();
     state.removeEventListener('characteristicvaluechanged', onState);
     state.addEventListener('characteristicvaluechanged', onState);
@@ -366,18 +385,47 @@ async function loadInfo() {
     if (artUrl) URL.revokeObjectURL(artUrl);
     artUrl = bytes.length ? URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' })) : null;
   }
+  if (info.wv != null && info.wv !== winVer && hasKey('windows')) want.win = true;
   update();
 }
+const hasKey = a => !!layout?.pages.some(p => p.keys.some(k => k.a === a));
 
-// Ricarica layout/info quando cambia la loro versione nello stato. Una sola sincronizzazione alla volta.
-const want = { layout: false, info: false };
+// Icone delle app: arrivano una volta sola, poi restano sul telefono.
+const icons = {};
+const iconOf = key => key ? icons[key] ??= (() => { try { return localStorage.getItem('plancia-ic:' + key); } catch { return null; } })() : null;
+
+async function loadWindows() {
+  const w = json(await readBig(ch.win, 6));
+  wins = w;
+  winVer = info.wv;
+  update();
+  for (const [j, app] of (w.a || []).entries()) {
+    if (!app.k || iconOf(app.k) || app.k in icons && icons[app.k] === '') continue;
+    await op(() => write({ ic: [w.v, j] }, true));
+    const bytes = await readBig(ch.icon, 7);
+    let url = '';
+    if (bytes.length) {
+      let bin = '';
+      for (const b of bytes) bin += String.fromCharCode(b);
+      url = 'data:image/png;base64,' + btoa(bin);
+      try { localStorage.setItem('plancia-ic:' + app.k, url); } catch { }
+    }
+    icons[app.k] = url; // '' = app senza icona: non si richiede più
+    iconsVer++;
+    update();
+  }
+}
+
+// Ricarica layout/info/finestre quando cambia la loro versione. Una sola sincronizzazione alla volta.
+const want = { layout: false, info: false, win: false };
 let syncP = null;
 function sync() {
   return syncP ??= (async () => {
     try {
-      while (want.layout || want.info) {
+      while (want.layout || want.info || want.win) {
         if (want.layout) { want.layout = false; await loadLayout(); want.info = true; }
         if (want.info) { want.info = false; await loadInfo(); }
+        if (want.win) { want.win = false; await loadWindows(); }
       }
     } catch { }
   })().finally(() => { syncP = null; });
@@ -427,7 +475,7 @@ $('refresh').addEventListener('click', async () => {
   t.dataset.busy = 1;
   const t0 = performance.now();
   try {
-    if (device?.gatt.connected) { t.textContent = 'Aggiorno…'; want.layout = true; await sync(); }
+    if (device?.gatt.connected) { t.textContent = 'Aggiorno…'; want.layout = true; want.win = hasKey('windows'); await sync(); }
     else if (device) { t.textContent = 'Connessione…'; retry = 0; await connect(device); }
     else show('connect');
   } catch { }
@@ -571,6 +619,7 @@ function makeKey(k, i) {
   if (k.a === 'none') { el.classList.add('empty'); return { el, upd() {} }; }
   if (k.a === 'vol.slider' || k.a === 'app.slider') return makeSlider(k, el);
   if (k.a === 'mixer') return makeMixer(k, el);
+  if (k.a === 'windows') return makeWindows(k, el);
   if (k.a === 'media.now') return makeNow(k, i, el);
   if (k.lg) el.classList.add('lg');
   bindPress(el, k, i);
@@ -735,6 +784,67 @@ function makeMixer(k, el) {
         c.classList.toggle('na', v < 0);
         c.firstChild.textContent = v < 0 ? '—' : v + '%';
       }
+    }
+  };
+}
+
+// Finestre aperte sul PC, raggruppate per desktop: tocco = vai al desktop della finestra e portala in primo piano.
+function makeWindows(k, el) {
+  el.classList.add('wn');
+  el.addEventListener('pointerdown', goFull);
+  let sig = null, first = true;
+  // "Documento - Visual Studio Code" -> "Documento" (il nome dell'app c'è già nell'icona)
+  const short = (t, app) => {
+    for (const sep of [' - ', ' — ', ' | ']) if (app && t.endsWith(sep + app) && t.length > app.length + sep.length) return t.slice(0, -(app.length + sep.length));
+    return t;
+  };
+  const build = () => {
+    el.innerHTML = '';
+    const list = wins?.w || [];
+    if (!list.length) { el.innerHTML = `<div class="wempty">${wins ? 'Nessuna finestra aperta' : 'Caricamento…'}</div>`; return; }
+    const desks = [...new Set(list.map(w => w.d))].sort((a, b) => (a || 99) - (b || 99));
+    let n = 0;
+    for (const d of desks) {
+      const sec = document.createElement('div'), head = document.createElement('div'), grid = document.createElement('div');
+      sec.className = 'wsec';
+      head.className = 'wsh' + (d === st.d ? ' cur' : '');
+      const name = (info.ds || [])[d - 1];
+      head.textContent = d ? `Desktop ${d}` + (name && name !== `Desktop ${d}` ? ` · ${name}` : '') : 'Tutti i desktop';
+      grid.className = 'wgrid';
+      for (const w of list.filter(x => x.d === d)) {
+        const app = wins.a[w.a] || {}, b = document.createElement('button');
+        b.className = 'wt';
+        if (first) b.style.animationDelay = Math.min(n++ * 18, 400) + 'ms';
+        else b.style.animation = 'none';
+        const ic = iconOf(app.k);
+        b.innerHTML = ic ? `<img alt="">` : `<span class="av"></span>`;
+        if (ic) b.firstChild.src = ic; else b.firstChild.textContent = (app.n || w.t || '?').trim()[0]?.toUpperCase() || '?';
+        const t = document.createElement('span');
+        t.className = 'wtt';
+        t.textContent = short(w.t, app.n) || app.n || '';
+        b.append(t);
+        b.title = w.t;
+        b.addEventListener('click', () => {
+          navigator.vibrate?.(10);
+          b.animate([{ transform: 'scale(.92)' }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+          send({ w: w.i });
+        });
+        grid.append(b);
+      }
+      sec.append(head, grid);
+      el.append(sec);
+    }
+    first = false;
+  };
+  return {
+    el, upd() {
+      const s = [wins?.v, st.d, (info.ds || []).join('|'), iconsVer].join(':');
+      if (s === sig) return;
+      if (wins && sig && sig.split(':')[0] !== String(wins.v)) first = true; // elenco nuovo: rientra animato
+      sig = s;
+      const top = el.scrollTop;
+      build();
+      el.scrollTop = top;
     }
   };
 }
