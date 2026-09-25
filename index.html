@@ -141,6 +141,11 @@ html,body{margin:0;height:100%;background:var(--background);color:var(--foregrou
 .k.bad{background:var(--destructive);color:#fff;border-color:transparent}
 .k.arm{animation:arm 1s var(--ease) infinite}
 @keyframes arm{0%{box-shadow:0 0 0 0 color-mix(in oklch,var(--destructive) 55%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
+/* Teams squilla: Abbandona diventa Rispondi (verde, cornetta sollevata, pulsa) */
+.k.ring{background:var(--ok);color:#fff;border-color:transparent;animation:ring 1.2s var(--ease) infinite}
+.k.ring .ic svg{transform:rotate(-135deg)}
+.k.ring .s{color:inherit;opacity:.85}
+@keyframes ring{0%{box-shadow:0 0 0 0 color-mix(in oklch,var(--ok) 60%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
 .k.dim{opacity:.4}
 .k.empty{background:none;border-color:transparent;box-shadow:none}
 .k.lg::after{content:'';position:absolute;right:10px;top:10px;width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.3}
@@ -392,6 +397,7 @@ function parseState(dv) {
   };
 }
 const inMeeting = () => !!(st && st.f & 16);
+const ringing = () => !!(st && st.f & 64); // Teams squilla: Abbandona risponde
 
 // ---- Pagine di default (DefaultPages.cs): regola unica per tutte ----
 // v = 'off' → mai visibile · v = 'auto' → visibile solo col suo evento attivo (bit t del byte 7 dello STATE) · assente → normale
@@ -655,8 +661,13 @@ function sync() {
   })().finally(() => { syncP = null; });
 }
 
+const CLOSED = 'Plancia è stata chiusa sul PC.';
+let stateAt = 0;
 function onState(e) { onStateBytes(e.target.value); }
 function onStateBytes(dv) {
+  // Un solo byte = Plancia si sta chiudendo (BleServer.SayGoodbye): Windows non chiude il collegamento, lo facciamo noi.
+  if (dv.byteLength < 9) return leave(CLOSED);
+  stateAt = performance.now();
   const s = parseState(dv), prev = st;
   st = s;
   if (prev && s.v !== prev.v) want.layout = true;
@@ -677,8 +688,24 @@ function onLost() {
   $('lost').style.display = 'block';
   if (retry > 8) { leave('Connessione persa. Tocca il PC per ricollegarti.'); retry = 0; return; }
   const wait = Math.min(8000, 500 * 2 ** retry++);
-  setTimeout(() => { if (device && !device.gatt.connected) connect(device).then(() => { $('rtext').textContent = 'Aggiorna'; }).catch(onLost); }, wait);
+  // PC raggiungibile ma senza il servizio di Plancia (NotFoundError): l'app è chiusa, inutile riprovare.
+  setTimeout(() => {
+    if (device && !device.gatt.connected) connect(device).then(() => { $('rtext').textContent = 'Aggiorna'; })
+      .catch(e => e?.name === 'NotFoundError' ? leave(CLOSED) : onLost());
+  }, wait);
 }
+
+// Plancia chiusa senza salutare (crash, chiusura forzata): il collegamento resta su, ma lo STATE non si legge più.
+// Se tace da 5 s lo si rilegge; due letture fallite di fila col collegamento ancora attivo = app chiusa.
+let silentFails = 0;
+setInterval(() => {
+  if (!device?.gatt.connected || !ch.state || connecting || performance.now() - stateAt < 5000) return;
+  const d = device;
+  op(() => ch.state.readValue()).then(dv => { silentFails = 0; onStateBytes(dv); }).catch(e => {
+    if (e?.message === 'disconnesso' || device !== d || !d.gatt.connected) return; // ci pensa onLost
+    if (++silentFails >= 2) { silentFails = 0; leave(CLOSED); }
+  });
+}, 5000);
 
 // Scollega e torna alla schermata iniziale (telefono in verticale, o collegamento perso del tutto).
 function leave(message) {
@@ -871,7 +898,7 @@ function look(k, i) {
     case 'teams.video': return meet && f & 2 ? { icon: 'video', on: 1 } : { icon: 'video_off', dim: !meet };
     case 'teams.hand': return { icon: 'hand', on: meet && f & 4, dim: !meet };
     case 'teams.blur': return { icon: 'blur', on: meet && f & 8, dim: !meet };
-    case 'teams.leave': return armed.has(i) ? { icon: 'call_end', bad: 1, arm: 1, s: 'Tocca di nuovo' } : { icon: 'call_end', bad: meet, dim: !meet };
+    case 'teams.leave': return ringing() && !meet ? { icon: 'call_end', ring: 1, s: 'Rispondi' } : armed.has(i) ? { icon: 'call_end', bad: 1, arm: 1, s: 'Tocca di nuovo' } : { icon: 'call_end', bad: meet, dim: !meet };
     case 'teams.react': return { icon: 'emoji_' + (k.r || 'like'), dim: !meet };
     case 'launch': return { icon: 'open' };
     case 'hotkey': return { icon: 'keyboard' };
@@ -913,7 +940,7 @@ function makeKey(k, i) {
         else { main.className = 't'; main.textContent = k.l || ''; }
         if (!first) pop(main);
       }
-      for (const c of ['on', 'warn', 'bad', 'dim', 'arm']) el.classList.toggle(c, !!x[c]);
+      for (const c of ['on', 'warn', 'bad', 'dim', 'arm', 'ring']) el.classList.toggle(c, !!x[c]);
       const s = main.className === 't' ? '' : (x.s ?? k.l) || '';
       if (sub.textContent !== s) sub.textContent = s;
       sub.style.display = s ? '' : 'none';
@@ -975,8 +1002,8 @@ function bindPress(el, k, i) {
 function fire(def, i, isLong) {
   if (def.a === 'page') return goPage(def.p || 0);
   if (def.a === 'page.back') return goBack();
-  // Abbandona: il primo tocco arma il tasto, il secondo (entro 2,5 s) chiude la riunione.
-  if (def.a === 'teams.leave' && !isLong) {
+  // Abbandona: il primo tocco arma il tasto, il secondo (entro 2,5 s) chiude la riunione. Mentre squilla risponde subito.
+  if (def.a === 'teams.leave' && !isLong && !(ringing() && !inMeeting())) {
     if (!armed.has(i)) {
       armed.add(i);
       navigator.vibrate?.([30, 60, 30]);
